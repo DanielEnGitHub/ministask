@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { ChevronLeft, ChevronRight, Edit, Trash2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Eye, Trash2 } from 'lucide-react'
 import { Button } from '../ui/button'
 import { Card, CardContent } from '../ui/card'
 import { Badge } from '../ui/badge'
@@ -14,11 +14,9 @@ import {
   isSameDay,
   addMonths,
   subMonths,
-  isWithinInterval,
-  startOfDay,
-  endOfDay,
 } from 'date-fns'
 import { es } from 'date-fns/locale'
+import { useConfirm } from '@/hooks/useConfirm'
 
 interface CalendarViewProps {
   tasks: Task[]
@@ -32,6 +30,7 @@ export function CalendarView({
   onDeleteTask,
 }: CalendarViewProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date())
+  const { confirm, ConfirmDialog } = useConfirm()
 
   const monthStart = startOfMonth(currentMonth)
   const monthEnd = endOfMonth(currentMonth)
@@ -43,19 +42,28 @@ export function CalendarView({
 
   const getTasksForDay = (day: Date) => {
     return tasksWithDates.filter((task) => {
+      // Normalizar fechas a medianoche hora local para evitar problemas de timezone
+      const normalizeDate = (date: Date) => {
+        const d = new Date(date)
+        return new Date(d.getFullYear(), d.getMonth(), d.getDate())
+      }
+
+      const dayNormalized = normalizeDate(day)
+
       if (task.startDate && task.endDate) {
-        return isWithinInterval(day, {
-          start: startOfDay(new Date(task.startDate)),
-          end: endOfDay(new Date(task.endDate)),
-        })
+        const start = normalizeDate(new Date(task.startDate))
+        const end = normalizeDate(new Date(task.endDate))
+        return dayNormalized >= start && dayNormalized <= end
       }
 
       if (task.startDate) {
-        return isSameDay(new Date(task.startDate), day)
+        const start = normalizeDate(new Date(task.startDate))
+        return dayNormalized.getTime() === start.getTime()
       }
 
       if (task.endDate) {
-        return isSameDay(new Date(task.endDate), day)
+        const end = normalizeDate(new Date(task.endDate))
+        return dayNormalized.getTime() === end.getTime()
       }
 
       return false
@@ -181,21 +189,26 @@ export function CalendarView({
                             onEditTask(task)
                           }}
                           className="p-0.5 hover:bg-gray-100 rounded"
+                          title="Ver detalles"
                         >
-                          <Edit className="h-3 w-3" />
+                          <Eye className="h-3 w-3" />
                         </button>
                         <button
-                          onClick={(e) => {
+                          onClick={async (e) => {
                             e.stopPropagation()
-                            if (
-                              confirm(
-                                '¿Estás seguro de que quieres eliminar esta tarea?'
-                              )
-                            ) {
+                            const confirmed = await confirm({
+                              title: 'Eliminar tarea',
+                              description: `¿Estás seguro de que quieres eliminar "${task.title}"? Esta acción no se puede deshacer.`,
+                              confirmText: 'Eliminar',
+                              cancelText: 'Cancelar',
+                              variant: 'destructive',
+                            })
+                            if (confirmed) {
                               onDeleteTask(task.id)
                             }
                           }}
                           className="p-0.5 hover:bg-red-50 text-red-600 rounded"
+                          title="Eliminar tarea"
                         >
                           <Trash2 className="h-3 w-3" />
                         </button>
@@ -248,8 +261,9 @@ export function CalendarView({
                         variant="ghost"
                         className="h-7 w-7"
                         onClick={() => onEditTask(task)}
+                        title="Ver detalles"
                       >
-                        <Edit className="h-3 w-3" />
+                        <Eye className="h-3 w-3" />
                       </Button>
                     </div>
                   </div>
@@ -258,6 +272,8 @@ export function CalendarView({
           </CardContent>
         </Card>
       )}
+
+      <ConfirmDialog />
     </div>
   )
 }

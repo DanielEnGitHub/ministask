@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Search, Edit, Trash2, CheckSquare, Calendar } from 'lucide-react'
+import { Search, Eye, Trash2, CheckSquare, Calendar } from 'lucide-react'
 import { Input } from '../ui/input'
 import { Select } from '../ui/select'
 import { Button } from '../ui/button'
@@ -9,6 +9,7 @@ import type { Task, TaskStatus } from '@/lib/types'
 import { STATUS_CONFIG } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
+import { useConfirm } from '@/hooks/useConfirm'
 
 interface ListViewProps {
   tasks: Task[]
@@ -19,6 +20,7 @@ interface ListViewProps {
 export function ListView({ tasks, onEditTask, onDeleteTask }: ListViewProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all')
+  const { confirm, ConfirmDialog } = useConfirm()
 
   const filteredTasks = useMemo(() => {
     return tasks.filter((task) => {
@@ -135,22 +137,27 @@ export function ListView({ tasks, onEditTask, onDeleteTask }: ListViewProps) {
                       size="icon"
                       variant="ghost"
                       onClick={() => onEditTask(task)}
+                      title="Ver detalles"
                     >
-                      <Edit className="h-4 w-4" />
+                      <Eye className="h-4 w-4" />
                     </Button>
                     <Button
                       size="icon"
                       variant="ghost"
-                      onClick={() => {
-                        if (
-                          confirm(
-                            '¿Estás seguro de que quieres eliminar esta tarea?'
-                          )
-                        ) {
+                      onClick={async () => {
+                        const confirmed = await confirm({
+                          title: 'Eliminar tarea',
+                          description: `¿Estás seguro de que quieres eliminar "${task.title}"? Esta acción no se puede deshacer.`,
+                          confirmText: 'Eliminar',
+                          cancelText: 'Cancelar',
+                          variant: 'destructive',
+                        })
+                        if (confirmed) {
                           onDeleteTask(task.id)
                         }
                       }}
                       className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      title="Eliminar tarea"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -191,6 +198,8 @@ export function ListView({ tasks, onEditTask, onDeleteTask }: ListViewProps) {
           ))
         )}
       </div>
+
+      <ConfirmDialog />
     </div>
   )
 }

@@ -1,11 +1,12 @@
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd'
-import { Edit, Trash2, CheckSquare, Calendar } from 'lucide-react'
+import { Eye, Trash2, CheckSquare, Calendar } from 'lucide-react'
 import { Button } from '../ui/button'
 import { Card, CardContent } from '../ui/card'
 import type { Task, TaskStatus } from '@/lib/types'
 import { STATUS_CONFIG } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
+import { useConfirm } from '@/hooks/useConfirm'
 
 interface KanbanViewProps {
   tasks: Task[]
@@ -28,6 +29,8 @@ export function KanbanView({
   onDeleteTask,
   onUpdateTaskStatus,
 }: KanbanViewProps) {
+  const { confirm, ConfirmDialog } = useConfirm()
+
   const tasksByStatus = STATUS_ORDER.reduce((acc, status) => {
     acc[status] = tasks.filter((task) => task.status === status)
     return acc
@@ -114,23 +117,28 @@ export function KanbanView({
                                         e.stopPropagation()
                                         onEditTask(task)
                                       }}
+                                      title="Ver detalles"
                                     >
-                                      <Edit className="h-3 w-3" />
+                                      <Eye className="h-3 w-3" />
                                     </Button>
                                     <Button
                                       size="icon"
                                       variant="ghost"
                                       className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                      onClick={(e) => {
+                                      onClick={async (e) => {
                                         e.stopPropagation()
-                                        if (
-                                          confirm(
-                                            '¿Estás seguro de que quieres eliminar esta tarea?'
-                                          )
-                                        ) {
+                                        const confirmed = await confirm({
+                                          title: 'Eliminar tarea',
+                                          description: `¿Estás seguro de que quieres eliminar "${task.title}"? Esta acción no se puede deshacer.`,
+                                          confirmText: 'Eliminar',
+                                          cancelText: 'Cancelar',
+                                          variant: 'destructive',
+                                        })
+                                        if (confirmed) {
                                           onDeleteTask(task.id)
                                         }
                                       }}
+                                      title="Eliminar tarea"
                                     >
                                       <Trash2 className="h-3 w-3" />
                                     </Button>
@@ -186,6 +194,8 @@ export function KanbanView({
           ))}
         </div>
       </DragDropContext>
+
+      <ConfirmDialog />
     </div>
   )
 }
