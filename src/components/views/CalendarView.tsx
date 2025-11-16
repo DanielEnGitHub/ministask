@@ -4,7 +4,7 @@ import { Button } from '../ui/button'
 import { Card, CardContent } from '../ui/card'
 import { Badge } from '../ui/badge'
 import type { Task } from '@/lib/types'
-import { STATUS_CONFIG } from '@/lib/types'
+import { STATUS_CONFIG, LABEL_CONFIG } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import {
   format,
@@ -17,6 +17,7 @@ import {
 } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { useConfirm } from '@/hooks/useConfirm'
+import { normalizeDate, isDateInRange } from '@/lib/dateUtils'
 
 interface CalendarViewProps {
   tasks: Task[]
@@ -42,27 +43,19 @@ export function CalendarView({
 
   const getTasksForDay = (day: Date) => {
     return tasksWithDates.filter((task) => {
-      // Normalizar fechas a medianoche hora local para evitar problemas de timezone
-      const normalizeDate = (date: Date) => {
-        const d = new Date(date)
-        return new Date(d.getFullYear(), d.getMonth(), d.getDate())
-      }
-
       const dayNormalized = normalizeDate(day)
 
       if (task.startDate && task.endDate) {
-        const start = normalizeDate(new Date(task.startDate))
-        const end = normalizeDate(new Date(task.endDate))
-        return dayNormalized >= start && dayNormalized <= end
+        return isDateInRange(dayNormalized, task.startDate, task.endDate)
       }
 
       if (task.startDate) {
-        const start = normalizeDate(new Date(task.startDate))
+        const start = normalizeDate(task.startDate)
         return dayNormalized.getTime() === start.getTime()
       }
 
       if (task.endDate) {
-        const end = normalizeDate(new Date(task.endDate))
+        const end = normalizeDate(task.endDate)
         return dayNormalized.getTime() === end.getTime()
       }
 
@@ -179,7 +172,12 @@ export function CalendarView({
                       )}
                       onClick={() => onEditTask(task)}
                     >
-                      <div className="truncate font-medium">{task.title}</div>
+                      <div className="flex items-center gap-1">
+                        {task.label && (
+                          <span className="text-xs">{LABEL_CONFIG[task.label].icon}</span>
+                        )}
+                        <div className="truncate font-medium flex-1">{task.title}</div>
+                      </div>
 
                       {/* Hover actions */}
                       <div className="absolute top-0 right-0 hidden group-hover:flex gap-0.5 bg-white shadow-sm rounded border p-0.5">
@@ -253,6 +251,17 @@ export function CalendarView({
                       >
                         {STATUS_CONFIG[task.status].label}
                       </Badge>
+                      {task.label && (
+                        <Badge
+                          className={cn(
+                            LABEL_CONFIG[task.label].bgColor,
+                            LABEL_CONFIG[task.label].color,
+                            'border-0 text-xs'
+                          )}
+                        >
+                          {LABEL_CONFIG[task.label].icon} {LABEL_CONFIG[task.label].label}
+                        </Badge>
+                      )}
                       <span className="text-sm">{task.title}</span>
                     </div>
                     <div className="flex gap-1">

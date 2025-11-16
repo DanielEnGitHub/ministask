@@ -88,4 +88,23 @@ db.version(5).stores({
   }
 });
 
+// Versión 6: Limpiar campos de recurrencia y time tracking, agregar etiquetas
+db.version(6).stores({
+  tasks: 'id, title, status, label, projectId, sprintId, createdAt, startDate, endDate',
+  comments: 'id, taskId, createdAt',
+  projects: 'id, name, createdAt',
+  sprints: 'id, name, status, order, startDate, endDate, createdAt'
+}).upgrade(async trans => {
+  // Limpiar campos obsoletos de tareas existentes
+  const allTasks = await trans.table('tasks').toArray()
+  for (const task of allTasks) {
+    await trans.table('tasks').update(task.id, {
+      isRecurring: undefined,
+      recurrence: undefined,
+      parentTaskId: undefined,
+      timeTracking: undefined
+    })
+  }
+});
+
 export { db };

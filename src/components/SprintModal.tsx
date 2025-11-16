@@ -54,13 +54,25 @@ export function SprintModal({ open, onClose, onSave, sprint, projects, currentPr
     e.preventDefault()
     if (!name.trim() || !startDate || !endDate) return
 
+    // Validar que la fecha de fin sea posterior a la fecha de inicio
+    const start = new Date(startDate + 'T00:00:00')
+    const end = new Date(endDate + 'T00:00:00')
+
+    if (end <= start) {
+      alert('La fecha de fin debe ser posterior a la fecha de inicio')
+      return
+    }
+
     const sprintData: Partial<Sprint> = {
       ...(sprint?.id && { id: sprint.id }),
       name: name.trim(),
       description: description.trim() || undefined,
       projectIds: selectedProjectIds,
-      startDate: new Date(startDate),
-      endDate: new Date(endDate),
+      startDate: start,
+      endDate: end,
+      // Preservar el estado si estamos editando, o dejarlo undefined para que App.tsx lo establezca
+      ...(sprint?.id && { status: sprint.status }),
+      ...(sprint?.id && { order: sprint.order }),
       ...(!sprint?.id && { createdAt: new Date() }),
     }
 

@@ -4,7 +4,7 @@ import { Badge } from './ui/badge'
 import { cn } from '@/lib/utils'
 import type { Task, Project, Sprint } from '@/lib/types'
 import { STATUS_CONFIG } from '@/lib/types'
-import { Clock, Calendar, Folder, Target } from 'lucide-react'
+import { Calendar, Folder, Target } from 'lucide-react'
 
 interface HistoryModalProps {
   open: boolean
@@ -43,18 +43,6 @@ export function HistoryModal({ open, onClose, tasks, projects = [], sprints = []
     })
   }
 
-  const getTimeTracked = (task: Task): string | null => {
-    if (!task.timeTracking || task.timeTracking.trackedMinutes === 0) return null
-
-    const hours = Math.floor(task.timeTracking.trackedMinutes / 60)
-    const mins = Math.floor(task.timeTracking.trackedMinutes % 60)
-
-    if (hours > 0) {
-      return `${hours}h ${mins}m`
-    }
-    return `${mins}m`
-  }
-
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[80vh]">
@@ -74,7 +62,6 @@ export function HistoryModal({ open, onClose, tasks, projects = [], sprints = []
             sortedTasks.map((task) => {
               const projectName = getProjectName(task.projectId)
               const sprintName = getSprintName(task.sprintId)
-              const timeTracked = getTimeTracked(task)
 
               return (
                 <div
@@ -128,33 +115,13 @@ export function HistoryModal({ open, onClose, tasks, projects = [], sprints = []
                           </div>
                         )}
 
-                        {timeTracked && (
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            <span>{timeTracked} registrado</span>
-                          </div>
-                        )}
-
                         {task.subtasks.length > 0 && (
                           <span>
                             {task.subtasks.filter(st => st.completed).length}/{task.subtasks.length} subtareas
                           </span>
                         )}
-
-                        {task.isRecurring && (
-                          <Badge variant="outline" className="text-xs">
-                            Recurrente
-                          </Badge>
-                        )}
                       </div>
                     </div>
-
-                    {task.timeTracking?.isRunning && (
-                      <div className="flex items-center gap-1 text-xs text-blue-600 font-medium bg-blue-50 px-2 py-1 rounded">
-                        <Clock className="h-3 w-3" />
-                        En progreso
-                      </div>
-                    )}
                   </div>
                 </div>
               )

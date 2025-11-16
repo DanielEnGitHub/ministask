@@ -1,5 +1,7 @@
 export type TaskStatus = 'created' | 'in_progress' | 'paused' | 'cancelled' | 'completed';
 
+export type TaskLabel = 'bug' | 'implementacion' | 'mejora' | 'actualizacion' | 'otro';
+
 export interface SubTask {
   id: string;
   text: string;
@@ -13,43 +15,18 @@ export interface Comment {
   createdAt: Date;
 }
 
-export interface RecurrenceConfig {
-  frequency: 'daily' | 'weekly' | 'monthly';
-  interval: number; // cada X días/semanas/meses
-  daysOfWeek?: number[]; // 0=Domingo, 1=Lunes, ..., 6=Sábado (solo para weekly)
-  endDate?: Date; // cuando termina la recurrencia
-  endAfterOccurrences?: number; // o después de N ocurrencias
-}
-
-export interface TimeTracking {
-  estimatedMinutes?: number; // Tiempo estimado en minutos
-  trackedMinutes: number; // Tiempo acumulado en minutos
-  isRunning: boolean; // Si el timer está corriendo actualmente
-  startTime?: Date; // Cuando se inició el timer actual
-  sessions: TimeSession[]; // Historial de sesiones de trabajo
-}
-
-export interface TimeSession {
-  id: string;
-  startTime: Date;
-  endTime?: Date; // Si no hay endTime, la sesión está activa
-  minutes: number; // Duración en minutos
-}
-
 export interface Task {
   id: string;
   title: string;
   description?: string;
   status: TaskStatus;
+  label?: TaskLabel; // Etiqueta de la tarea
   subtasks: SubTask[];
   startDate?: Date;
   endDate?: Date;
   projectId?: string | null;
   sprintId?: string | null;
-  isRecurring: boolean;
-  recurrence?: RecurrenceConfig | null;
-  parentTaskId?: string | null; // para tareas generadas por recurrencia
-  timeTracking?: TimeTracking; // Sistema de tracking de tiempo
+  images?: string[]; // URLs o base64 de imágenes adjuntas
   createdAt: Date;
   updatedAt: Date;
 }
@@ -129,5 +106,38 @@ export const STATUS_CONFIG: Record<TaskStatus, { label: string; color: string; b
     label: 'Finalizado',
     color: 'text-green-700',
     bgColor: 'bg-green-100'
+  }
+};
+
+export const LABEL_CONFIG: Record<TaskLabel, { label: string; color: string; bgColor: string; icon: string }> = {
+  bug: {
+    label: 'Bug',
+    color: 'text-red-700',
+    bgColor: 'bg-red-100',
+    icon: '🐛'
+  },
+  implementacion: {
+    label: 'Implementación',
+    color: 'text-blue-700',
+    bgColor: 'bg-blue-100',
+    icon: '⚙️'
+  },
+  mejora: {
+    label: 'Mejora',
+    color: 'text-green-700',
+    bgColor: 'bg-green-100',
+    icon: '✨'
+  },
+  actualizacion: {
+    label: 'Actualización',
+    color: 'text-purple-700',
+    bgColor: 'bg-purple-100',
+    icon: '🔄'
+  },
+  otro: {
+    label: 'Otro',
+    color: 'text-gray-700',
+    bgColor: 'bg-gray-100',
+    icon: '📌'
   }
 };

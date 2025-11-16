@@ -6,8 +6,8 @@ import { cn } from '@/lib/utils'
 import type { Task, Project, Sprint } from '@/lib/types'
 import { STATUS_CONFIG } from '@/lib/types'
 import { Calendar, Folder, Target, Edit2, CheckSquare, Square } from 'lucide-react'
-import { TaskTimer } from './TaskTimer'
 import { db } from '@/lib/db'
+import { formatDateForDisplay } from '@/lib/dateUtils'
 
 interface TaskDetailModalProps {
   open: boolean
@@ -16,7 +16,6 @@ interface TaskDetailModalProps {
   projects?: Project[]
   sprints?: Sprint[]
   onEdit: (task: Task) => void
-  onUpdateTask: (task: Task) => void
 }
 
 export function TaskDetailModal({
@@ -25,8 +24,7 @@ export function TaskDetailModal({
   task,
   projects = [],
   sprints = [],
-  onEdit,
-  onUpdateTask
+  onEdit
 }: TaskDetailModalProps) {
   // Usar useLiveQuery para obtener la tarea actualizada en tiempo real
   const liveTask = useLiveQuery(
@@ -129,7 +127,7 @@ export function TaskDetailModal({
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-gray-400" />
                     <span className="text-gray-700">
-                      {new Date(currentTask.startDate).toLocaleDateString()}
+                      {formatDateForDisplay(currentTask.startDate)}
                     </span>
                   </div>
                 </div>
@@ -143,24 +141,13 @@ export function TaskDetailModal({
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-gray-400" />
                     <span className="text-gray-700">
-                      {new Date(currentTask.endDate).toLocaleDateString()}
+                      {formatDateForDisplay(currentTask.endDate)}
                     </span>
                   </div>
                 </div>
               )}
             </div>
           )}
-
-          {/* Time Tracking */}
-          <div className="border rounded-xl p-4 bg-gray-50">
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Seguimiento de Tiempo
-            </label>
-            <TaskTimer
-              task={currentTask}
-              onUpdateTask={onUpdateTask}
-            />
-          </div>
 
           {/* Subtareas */}
           {currentTask.subtasks.length > 0 && (

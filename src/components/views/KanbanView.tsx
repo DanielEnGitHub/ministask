@@ -2,8 +2,9 @@ import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-p
 import { Eye, Trash2, CheckSquare, Calendar } from 'lucide-react'
 import { Button } from '../ui/button'
 import { Card, CardContent } from '../ui/card'
+import { Badge } from '../ui/badge'
 import type { Task, TaskStatus } from '@/lib/types'
-import { STATUS_CONFIG } from '@/lib/types'
+import { STATUS_CONFIG, LABEL_CONFIG } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import { useConfirm } from '@/hooks/useConfirm'
@@ -105,9 +106,22 @@ export function KanbanView({
                             <CardContent className="p-4">
                               <div className="space-y-3">
                                 <div className="flex items-start justify-between gap-2">
-                                  <h4 className="font-medium text-gray-900 flex-1">
-                                    {task.title}
-                                  </h4>
+                                  <div className="flex-1 space-y-2">
+                                    <h4 className="font-medium text-gray-900">
+                                      {task.title}
+                                    </h4>
+                                    {task.label && (
+                                      <Badge
+                                        className={cn(
+                                          LABEL_CONFIG[task.label].bgColor,
+                                          LABEL_CONFIG[task.label].color,
+                                          'border-0 text-xs'
+                                        )}
+                                      >
+                                        {LABEL_CONFIG[task.label].icon} {LABEL_CONFIG[task.label].label}
+                                      </Badge>
+                                    )}
+                                  </div>
                                   <div className="flex gap-1">
                                     <Button
                                       size="icon"

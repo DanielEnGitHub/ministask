@@ -1,12 +1,11 @@
 import { useState, useMemo } from 'react'
 import { Search, Eye, Trash2, CheckSquare, Calendar } from 'lucide-react'
 import { Input } from '../ui/input'
-import { Select } from '../ui/select'
 import { Button } from '../ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Badge } from '../ui/badge'
-import type { Task, TaskStatus } from '@/lib/types'
-import { STATUS_CONFIG } from '@/lib/types'
+import type { Task } from '@/lib/types'
+import { STATUS_CONFIG, LABEL_CONFIG } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import { useConfirm } from '@/hooks/useConfirm'
@@ -19,7 +18,6 @@ interface ListViewProps {
 
 export function ListView({ tasks, onEditTask, onDeleteTask }: ListViewProps) {
   const [searchQuery, setSearchQuery] = useState('')
-  const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all')
   const { confirm, ConfirmDialog } = useConfirm()
 
   const filteredTasks = useMemo(() => {
@@ -27,12 +25,10 @@ export function ListView({ tasks, onEditTask, onDeleteTask }: ListViewProps) {
       const matchesSearch = task.title
         .toLowerCase()
         .includes(searchQuery.toLowerCase())
-      const matchesStatus =
-        statusFilter === 'all' || task.status === statusFilter
 
-      return matchesSearch && matchesStatus
+      return matchesSearch
     })
-  }, [tasks, searchQuery, statusFilter])
+  }, [tasks, searchQuery])
 
   const getCompletedSubtasks = (task: Task) => {
     if (!task.subtasks || task.subtasks.length === 0) return null
@@ -42,30 +38,15 @@ export function ListView({ tasks, onEditTask, onDeleteTask }: ListViewProps) {
 
   return (
     <div className="p-6 space-y-6">
-      {/* Header con búsqueda y filtros */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Buscar tareas..."
-            className="pl-10"
-          />
-        </div>
-
-        <Select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value as TaskStatus | 'all')}
-          className="sm:w-48"
-        >
-          <option value="all">Todos los estados</option>
-          {Object.entries(STATUS_CONFIG).map(([key, config]) => (
-            <option key={key} value={key}>
-              {config.label}
-            </option>
-          ))}
-        </Select>
+      {/* Header con búsqueda */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+        <Input
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Buscar tareas..."
+          className="pl-10"
+        />
       </div>
 
       {/* Resultados */}
@@ -101,6 +82,17 @@ export function ListView({ tasks, onEditTask, onDeleteTask }: ListViewProps) {
                       >
                         {STATUS_CONFIG[task.status].label}
                       </Badge>
+                      {task.label && (
+                        <Badge
+                          className={cn(
+                            LABEL_CONFIG[task.label].bgColor,
+                            LABEL_CONFIG[task.label].color,
+                            'border-0'
+                          )}
+                        >
+                          {LABEL_CONFIG[task.label].icon} {LABEL_CONFIG[task.label].label}
+                        </Badge>
+                      )}
                     </div>
 
                     {task.description && (

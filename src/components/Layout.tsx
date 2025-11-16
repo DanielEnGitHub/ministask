@@ -1,8 +1,9 @@
-import { List, Kanban, Calendar, FolderKanban, Plus, Folder, Edit, Trash2, Target } from 'lucide-react'
+import { List, Kanban, Calendar, FolderKanban, Plus, Folder, Edit, Trash2, Target, Moon, Sun, Play, CheckCircle2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from './ui/button'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion'
-import type { Project, Sprint } from '@/lib/types'
+import type { Project, Sprint, Task } from '@/lib/types'
+import { SPRINT_STATUS_CONFIG } from '@/lib/types'
 import { useConfirm } from '@/hooks/useConfirm'
 
 export type ViewType = 'list' | 'kanban' | 'calendar'
@@ -23,6 +24,7 @@ interface LayoutProps {
   }
   projects?: Project[]
   sprints?: Sprint[]
+  tasks?: Task[]
   selectedProjectId?: string | null
   onSelectProject?: (projectId: string | null) => void
   onEditProject?: (project: Project) => void
@@ -31,11 +33,8 @@ interface LayoutProps {
   onDeleteSprint?: (sprintId: string) => void
   onCompleteSprint?: (sprintId: string) => void
   onActivateSprint?: (sprintId: string) => void
-  filterType?: 'all' | 'project' | 'sprint' | 'unassigned'
-  filterSprintId?: string | null
-  onFilterBySprint?: (sprintId: string | null) => void
-  onFilterUnassigned?: () => void
-  onFilterAll?: () => void
+  theme?: 'light' | 'dark'
+  onToggleTheme?: () => void
 }
 
 export function Layout({
@@ -48,6 +47,7 @@ export function Layout({
   taskCounts,
   projects = [],
   sprints = [],
+  tasks = [],
   selectedProjectId,
   onSelectProject,
   onEditProject,
@@ -56,11 +56,8 @@ export function Layout({
   onDeleteSprint,
   onCompleteSprint: _onCompleteSprint,
   onActivateSprint: _onActivateSprint,
-  filterType = 'all',
-  filterSprintId,
-  onFilterBySprint,
-  onFilterUnassigned,
-  onFilterAll,
+  theme = 'light',
+  onToggleTheme,
 }: LayoutProps) {
   const sidebarOpen = true
   const { confirm, ConfirmDialog } = useConfirm()
@@ -76,7 +73,6 @@ export function Layout({
     : 0
 
   const selectedProject = projects.find(p => p.id === selectedProjectId)
-  const selectedSprint = sprints.find(s => s.id === filterSprintId)
 
   // Filtrar sprints: si hay proyecto seleccionado, mostrar sprints que lo incluyan
   const filteredSprints = selectedProjectId
@@ -85,27 +81,36 @@ export function Layout({
 
   // Determinar el título del filtro activo
   const getFilterLabel = () => {
-    if (filterType === 'unassigned') return 'Sin asignar'
-    if (filterType === 'project' && selectedProject) return selectedProject.name
-    if (filterType === 'sprint' && selectedSprint) return selectedSprint.name
+    if (selectedProject) return selectedProject.name
     return 'Todas'
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-background">
       {/* Sidebar */}
       <aside
         className={cn(
-          'bg-white border-r border-gray-200 transition-all duration-300 flex flex-col',
+          'bg-card border-r border-border transition-all duration-300 flex flex-col',
           sidebarOpen ? 'w-64' : 'w-0 overflow-hidden'
         )}
       >
-        <div className="p-6 border-b border-gray-200">
+        <div className="p-6 border-b border-border">
           <div className="flex items-center gap-2 mb-2">
             <FolderKanban className="h-6 w-6 text-blue-600" />
-            <h1 className="text-xl font-bold text-gray-900">MiniTasks</h1>
+            <h1 className="text-xl font-bold text-foreground">MiniTasks</h1>
+            <button
+              onClick={onToggleTheme}
+              className="ml-auto p-2 rounded-lg hover:bg-accent transition-colors"
+              title={theme === 'light' ? 'Cambiar a modo oscuro' : 'Cambiar a modo claro'}
+            >
+              {theme === 'light' ? (
+                <Moon className="h-4 w-4 text-muted-foreground" />
+              ) : (
+                <Sun className="h-4 w-4 text-muted-foreground" />
+              )}
+            </button>
           </div>
-          <p className="text-sm text-gray-500">{totalTasks} tareas totales</p>
+          <p className="text-sm text-muted-foreground">{totalTasks} tareas totales</p>
         </div>
 
         <nav className="flex-1 p-4 flex flex-col overflow-hidden">
@@ -117,44 +122,10 @@ export function Layout({
           </div>
 
           <div className="flex-1 overflow-y-auto space-y-2">
-            <Accordion type="multiple" className="space-y-2" defaultValue={['filtros', 'proyectos', 'sprints', 'vistas']}>
-            {/* Filtros */}
-            <AccordionItem value="filtros" className="border-none">
-              <AccordionTrigger className="text-xs font-semibold text-gray-500 uppercase px-3 py-2 hover:no-underline hover:bg-gray-50 rounded-lg">
-                Filtros
-              </AccordionTrigger>
-              <AccordionContent className="space-y-1 pt-2">
-                <button
-                  onClick={onFilterAll}
-                  className={cn(
-                    'w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200',
-                    filterType === 'all'
-                      ? 'bg-blue-50 text-blue-700'
-                      : 'text-gray-600 hover:bg-gray-100'
-                  )}
-                >
-                  <List className="h-4 w-4" />
-                  Todas las tareas
-                </button>
-
-                <button
-                  onClick={onFilterUnassigned}
-                  className={cn(
-                    'w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200',
-                    filterType === 'unassigned'
-                      ? 'bg-blue-50 text-blue-700'
-                      : 'text-gray-600 hover:bg-gray-100'
-                  )}
-                >
-                  <FolderKanban className="h-4 w-4" />
-                  Sin asignar
-                </button>
-              </AccordionContent>
-            </AccordionItem>
-
+            <Accordion type="multiple" className="space-y-2" defaultValue={['proyectos', 'sprints', 'vistas']}>
             {/* Proyectos */}
             <AccordionItem value="proyectos" className="border-none">
-              <AccordionTrigger className="text-xs font-semibold text-gray-500 uppercase px-3 py-2 hover:no-underline hover:bg-gray-50 rounded-lg">
+              <AccordionTrigger className="text-xs font-semibold text-muted-foreground uppercase px-3 py-2 hover:no-underline hover:bg-accent rounded-lg">
                 <div className="flex items-center justify-between w-full pr-2">
                   <span>Proyectos</span>
                   <button
@@ -162,7 +133,7 @@ export function Layout({
                       e.stopPropagation()
                       onNewProject()
                     }}
-                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                    className="text-muted-foreground hover:text-foreground transition-colors"
                     title="Nuevo Proyecto"
                   >
                     <Plus className="h-3 w-3" />
@@ -182,8 +153,8 @@ export function Layout({
                       className={cn(
                         'w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-colors',
                         !selectedProjectId
-                          ? 'bg-blue-50 text-blue-700'
-                          : 'text-gray-600 hover:bg-gray-100'
+                          ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
+                          : 'text-muted-foreground hover:bg-accent'
                       )}
                     >
                       <FolderKanban className="h-4 w-4" />
@@ -195,10 +166,10 @@ export function Layout({
                         <button
                           onClick={() => onSelectProject?.(project.id)}
                           className={cn(
-                            'w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-colors',
+                            'w-full flex items-center gap-2 px-3 py-2 pr-20 rounded-xl text-sm font-medium transition-colors',
                             selectedProjectId === project.id
-                              ? 'bg-blue-50 text-blue-700'
-                              : 'text-gray-600 hover:bg-gray-100'
+                              ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
+                              : 'text-muted-foreground hover:bg-accent'
                           )}
                         >
                           <div
@@ -248,7 +219,7 @@ export function Layout({
 
             {/* Sprints */}
             <AccordionItem value="sprints" className="border-none">
-              <AccordionTrigger className="text-xs font-semibold text-gray-500 uppercase px-3 py-2 hover:no-underline hover:bg-gray-50 rounded-lg">
+              <AccordionTrigger className="text-xs font-semibold text-muted-foreground uppercase px-3 py-2 hover:no-underline hover:bg-accent rounded-lg">
                 <div className="flex items-center justify-between w-full pr-2">
                   <span>Sprints</span>
                   <button
@@ -256,7 +227,7 @@ export function Layout({
                       e.stopPropagation()
                       onNewSprint()
                     }}
-                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                    className="text-muted-foreground hover:text-foreground transition-colors"
                     title="Nuevo Sprint"
                   >
                     <Plus className="h-3 w-3" />
@@ -270,42 +241,55 @@ export function Layout({
                     Nuevo Sprint
                   </Button>
                 ) : filteredSprints.length === 0 ? (
-                  <p className="text-xs text-gray-500 text-center py-4">
+                  <p className="text-xs text-muted-foreground text-center py-4">
                     {selectedProject ? 'No hay sprints para este proyecto' : 'No hay sprints'}
                   </p>
                 ) : (
                   filteredSprints.map((sprint) => {
                     const sprintProjects = projects.filter(p => sprint.projectIds.includes(p.id))
+                    const sprintTasks = tasks.filter(t => t.sprintId === sprint.id)
+                    const completedTasks = sprintTasks.filter(t => t.status === 'completed').length
+                    const totalTasks = sprintTasks.length
+                    const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
+
+                    const statusConfig = SPRINT_STATUS_CONFIG[sprint.status]
 
                     return (
                       <div key={sprint.id} className="group relative">
-                        <button
-                          onClick={() => onFilterBySprint?.(sprint.id)}
-                          className={cn(
-                            "w-full px-3 py-2 rounded-xl text-sm text-left transition-all duration-200",
-                            filterType === 'sprint' && filterSprintId === sprint.id
-                              ? 'bg-blue-50'
-                              : 'hover:bg-gray-100'
-                          )}
-                        >
-                          <div className="flex items-center gap-2">
-                            <Target className={cn(
-                              "h-3 w-3 flex-shrink-0",
-                              filterType === 'sprint' && filterSprintId === sprint.id
-                                ? 'text-blue-600'
-                                : 'text-gray-400'
-                            )} />
-                            <span className={cn(
-                              "flex-1 truncate font-medium",
-                              filterType === 'sprint' && filterSprintId === sprint.id
-                                ? 'text-blue-700'
-                                : 'text-gray-900'
-                            )}>{sprint.name}</span>
+                        <div className="w-full px-3 py-2 pr-20 rounded-xl text-sm text-left hover:bg-accent">
+                          <div className="flex items-center gap-2 mb-1">
+                            {sprint.status === 'active' ? (
+                              <Play className="h-3 w-3 flex-shrink-0 text-green-600" />
+                            ) : sprint.status === 'completed' ? (
+                              <CheckCircle2 className="h-3 w-3 flex-shrink-0 text-blue-600" />
+                            ) : (
+                              <Target className="h-3 w-3 flex-shrink-0 text-gray-400" />
+                            )}
+                            <span className="flex-1 truncate font-medium text-foreground">{sprint.name}</span>
+                            <span className={cn("text-xs px-2 py-0.5 rounded-full", statusConfig.bgColor, statusConfig.color)}>
+                              {statusConfig.label}
+                            </span>
                           </div>
-                          <div className="text-xs text-gray-500 ml-5 space-y-1">
+                          <div className="text-xs text-muted-foreground ml-5 space-y-1.5">
                             <div>
                               {new Date(sprint.startDate).toLocaleDateString()} - {new Date(sprint.endDate).toLocaleDateString()}
                             </div>
+                            {totalTasks > 0 && (
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                                    <div
+                                      className="h-full bg-blue-600 rounded-full transition-all"
+                                      style={{ width: `${progress}%` }}
+                                    />
+                                  </div>
+                                  <span className="text-xs font-medium">{progress}%</span>
+                                </div>
+                                <div className="text-xs">
+                                  {completedTasks}/{totalTasks} tareas
+                                </div>
+                              </div>
+                            )}
                             {sprintProjects.length > 0 && (
                               <div className="flex items-center gap-1 flex-wrap">
                                 {sprintProjects.map(project => (
@@ -323,7 +307,7 @@ export function Layout({
                               </div>
                             )}
                           </div>
-                        </button>
+                        </div>
 
                         <div className="absolute right-2 top-2 hidden group-hover:flex gap-1">
                           <button
@@ -365,7 +349,7 @@ export function Layout({
 
             {/* Vistas */}
             <AccordionItem value="vistas" className="border-none">
-              <AccordionTrigger className="text-xs font-semibold text-gray-500 uppercase px-3 py-2 hover:no-underline hover:bg-gray-50 rounded-lg">
+              <AccordionTrigger className="text-xs font-semibold text-muted-foreground uppercase px-3 py-2 hover:no-underline hover:bg-accent rounded-lg">
                 Vistas
               </AccordionTrigger>
               <AccordionContent className="space-y-1 pt-2">
@@ -376,8 +360,8 @@ export function Layout({
                     className={cn(
                       'w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-colors',
                       currentView === view.id
-                        ? 'bg-blue-50 text-blue-700'
-                        : 'text-gray-600 hover:bg-gray-100'
+                        ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
+                        : 'text-muted-foreground hover:bg-accent'
                     )}
                   >
                     <view.icon className="h-4 w-4" />
@@ -391,30 +375,30 @@ export function Layout({
 
           {/* Estados - Fijo en la parte inferior del sidebar */}
           {taskCounts && (
-            <div className="pt-4 mt-4 border-t border-gray-200 flex-shrink-0">
-              <p className="text-xs font-semibold text-gray-500 uppercase px-3 mb-2">
+            <div className="pt-4 mt-4 border-t border-border flex-shrink-0">
+              <p className="text-xs font-semibold text-muted-foreground uppercase px-3 mb-2">
                 Estado - {getFilterLabel()}
               </p>
               <div className="space-y-1 text-sm px-3">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Creados</span>
-                  <span className="font-medium text-gray-700">{taskCounts.created}</span>
+                  <span className="text-muted-foreground">Creados</span>
+                  <span className="font-medium text-foreground">{taskCounts.created}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">En Proceso</span>
-                  <span className="font-medium text-blue-600">{taskCounts.in_progress}</span>
+                  <span className="text-muted-foreground">En Proceso</span>
+                  <span className="font-medium text-blue-600 dark:text-blue-400">{taskCounts.in_progress}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Pausados</span>
-                  <span className="font-medium text-yellow-600">{taskCounts.paused}</span>
+                  <span className="text-muted-foreground">Pausados</span>
+                  <span className="font-medium text-yellow-600 dark:text-yellow-400">{taskCounts.paused}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Cancelados</span>
-                  <span className="font-medium text-red-600">{taskCounts.cancelled}</span>
+                  <span className="text-muted-foreground">Cancelados</span>
+                  <span className="font-medium text-red-600 dark:text-red-400">{taskCounts.cancelled}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Finalizados</span>
-                  <span className="font-medium text-green-600">{taskCounts.completed}</span>
+                  <span className="text-muted-foreground">Finalizados</span>
+                  <span className="font-medium text-green-600 dark:text-green-400">{taskCounts.completed}</span>
                 </div>
               </div>
             </div>

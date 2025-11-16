@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Layout, type ViewType } from './components/Layout'
 import { TaskModal } from './components/TaskModal'
@@ -10,9 +10,10 @@ import { KanbanView } from './components/views/KanbanView'
 import { CalendarView } from './components/views/CalendarView'
 import { db } from './lib/db'
 import type { Task, TaskStatus, Project, Sprint } from './lib/types'
-import { checkAndGenerateRecurringTasks } from './lib/recurrence'
+import { useTheme } from './hooks/useTheme'
 
 function App() {
+  const { theme, toggleTheme } = useTheme()
   const [currentView, setCurrentView] = useState<ViewType>('list')
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false)
   const [isTaskDetailModalOpen, setIsTaskDetailModalOpen] = useState(false)
@@ -24,43 +25,15 @@ function App() {
   const [editingSprint, setEditingSprint] = useState<Sprint | null>(null)
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
 
-  // Filtros
-  const [filterType, setFilterType] = useState<'all' | 'project' | 'sprint' | 'unassigned'>('all')
-  const [filterProjectId, setFilterProjectId] = useState<string | null>(null)
-  const [filterSprintId, setFilterSprintId] = useState<string | null>(null)
-
   // Cargar datos desde IndexedDB
   const tasks = useLiveQuery(() => db.tasks.toArray()) || []
   const projects = useLiveQuery(() => db.projects.toArray()) || []
   const sprints = useLiveQuery(() => db.sprints.toArray()) || []
 
-  // Generar tareas recurrentes automáticamente
-  useEffect(() => {
-    if (tasks.length > 0) {
-      checkAndGenerateRecurringTasks(tasks, handleSaveTask).catch(err =>
-        console.error('Error generating recurring tasks:', err)
-      )
-    }
-  }, [tasks.length]) // Solo cuando cambia el número de tareas
-
-  // Filtrar tareas según el tipo de filtro seleccionado
-  const filteredTasks = (() => {
-    switch (filterType) {
-      case 'project':
-        return filterProjectId
-          ? tasks.filter(t => t.projectId === filterProjectId)
-          : tasks
-      case 'sprint':
-        return filterSprintId
-          ? tasks.filter(t => t.sprintId === filterSprintId)
-          : tasks
-      case 'unassigned':
-        return tasks.filter(t => !t.projectId && !t.sprintId)
-      case 'all':
-      default:
-        return tasks
-    }
-  })()
+  // Filtrar tareas por proyecto seleccionado
+  const filteredTasks = selectedProjectId
+    ? tasks.filter(t => t.projectId === selectedProjectId)
+    : tasks
 
   // Calcular contadores por estado (usando tareas filtradas)
   const taskCounts = {
@@ -118,14 +91,13 @@ function App() {
           title: taskData.title!,
           description: taskData.description,
           status: taskData.status || 'created',
+          label: taskData.label,
           subtasks: taskData.subtasks || [],
           startDate: taskData.startDate,
           endDate: taskData.endDate,
           projectId: taskData.projectId || null,
           sprintId: taskData.sprintId || null,
-          isRecurring: taskData.isRecurring || false,
-          recurrence: taskData.recurrence || null,
-          parentTaskId: taskData.parentTaskId || null,
+          images: taskData.images || [],
           createdAt: new Date(),
           updatedAt: new Date(),
         }
@@ -298,29 +270,8 @@ function App() {
     }
   }
 
-  const handleFilterByProject = (projectId: string | null) => {
-    setFilterType('project')
-    setFilterProjectId(projectId)
+  const handleSelectProject = (projectId: string | null) => {
     setSelectedProjectId(projectId)
-  }
-
-  const handleFilterBySprint = (sprintId: string | null) => {
-    setFilterType('sprint')
-    setFilterSprintId(sprintId)
-  }
-
-  const handleFilterUnassigned = () => {
-    setFilterType('unassigned')
-    setFilterProjectId(null)
-    setFilterSprintId(null)
-    setSelectedProjectId(null)
-  }
-
-  const handleFilterAll = () => {
-    setFilterType('all')
-    setFilterProjectId(null)
-    setFilterSprintId(null)
-    setSelectedProjectId(null)
   }
 
   return (
@@ -333,19 +284,17 @@ function App() {
       taskCounts={taskCounts}
       projects={projects}
       sprints={sprints}
+      tasks={tasks}
       selectedProjectId={selectedProjectId}
-      onSelectProject={handleFilterByProject}
+      onSelectProject={handleSelectProject}
       onEditProject={handleEditProject}
       onDeleteProject={handleDeleteProject}
       onEditSprint={handleEditSprint}
       onDeleteSprint={handleDeleteSprint}
       onCompleteSprint={handleCompleteSprint}
       onActivateSprint={handleActivateSprint}
-      filterType={filterType}
-      filterSprintId={filterSprintId}
-      onFilterBySprint={handleFilterBySprint}
-      onFilterUnassigned={handleFilterUnassigned}
-      onFilterAll={handleFilterAll}
+      theme={theme}
+      onToggleTheme={toggleTheme}
     >
       {currentView === 'list' && (
         <ListView
@@ -389,7 +338,6 @@ function App() {
         projects={projects}
         sprints={sprints}
         onEdit={handleEditTask}
-        onUpdateTask={handleSaveTask}
       />
 
       <ProjectModal
