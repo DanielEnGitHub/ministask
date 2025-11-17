@@ -1,5 +1,4 @@
-import { useState } from 'react'
-import { useLiveQuery } from 'dexie-react-hooks'
+import { useState, useEffect } from 'react'
 import { Layout, type ViewType } from '@/components/Layout'
 import { TaskModal } from '@/components/TaskModal'
 import { TaskDetailModal } from '@/components/TaskDetailModal'
@@ -7,12 +6,18 @@ import { ProjectModal } from '@/components/ProjectModal'
 import { ListView } from '@/components/views/ListView'
 import { KanbanView } from '@/components/views/KanbanView'
 import { CalendarView } from '@/components/views/CalendarView'
-import { db } from '@/lib/db'
 import type { Task, TaskStatus, Project } from '@/lib/types'
 import { useTheme } from '@/hooks/useTheme'
+import { useAuth } from '@/contexts/AuthContext'
+import { usePermissions } from '@/hooks/usePermissions'
+import * as ProjectsService from '@/services/projects.service'
+import * as TasksService from '@/services/tasks.service'
 
 export function Dashboard() {
   const { theme, toggleTheme } = useTheme()
+  const { user, profile, isAdmin } = useAuth()
+  const permissions = usePermissions()
+
   const [currentView, setCurrentView] = useState<ViewType>('list')
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false)
   const [isTaskDetailModalOpen, setIsTaskDetailModalOpen] = useState(false)
@@ -22,13 +27,40 @@ export function Dashboard() {
   const [editingProject, setEditingProject] = useState<Project | null>(null)
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
 
-  // Cargar datos desde IndexedDB
-  const tasks = useLiveQuery(() => db.tasks.toArray()) || []
-  const projects = useLiveQuery(() => db.projects.toArray()) || []
+  // Estado para datos desde Supabase
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [projects, setProjects] = useState<Project[]>([])
+  const [loading, setLoading] = useState(true)
+
+  // Cargar datos iniciales desde Supabase
+  useEffect(() => {
+    if (!user || !profile) return
+
+    loadData()
+  }, [user, profile])
+
+  const loadData = async () => {
+    if (!user || !profile) return
+
+    setLoading(true)
+    try {
+      // Cargar proyectos según rol
+      const { data: projectsData } = await ProjectsService.getAllProjects(user.id, isAdmin)
+      setProjects(projectsData || [])
+
+      // Cargar tareas según rol
+      const { data: tasksData } = await TasksService.getAllTasks(user.id, isAdmin)
+      setTasks(tasksData || [])
+    } catch (error) {
+      console.error('[loadData] Error:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   // Filtrar tareas por proyecto seleccionado
   const filteredTasks = selectedProjectId
-    ? tasks.filter(t => t.projectId === selectedProjectId)
+    ? tasks.filter(t => t.project_id === selectedProjectId)
     : tasks
 
   // Calcular contadores por estado (usando tareas filtradas)
@@ -66,27 +98,43 @@ export function Dashboard() {
   }
 
   const handleSaveTask = async (taskData: Partial<Task>) => {
+    if (!user) return
+
     try {
       if (taskData.id) {
         // Actualizar tarea existente
-        await db.tasks.update(taskData.id, taskData)
+        const { data } = await TasksService.updateTask(taskData.id, {
+          title: taskData.title,
+          description: taskData.description,
+          status: taskData.status,
+          label: taskData.label,
+          projectId: (taskData as any).projectId || taskData.project_id,
+          startDate: (taskData as any).startDate || taskData.start_date ? new Date((taskData as any).startDate || taskData.start_date) : undefined,
+          endDate: (taskData as any).endDate || taskData.end_date ? new Date((taskData as any).endDate || taskData.end_date) : undefined,
+          subtasks: taskData.subtasks,
+        })
+
+        if (data) {
+          // Actualizar en el estado local
+          setTasks(prev => prev.map(t => t.id === data.id ? data : t))
+        }
       } else {
         // Crear nueva tarea
-        const newTask: Task = {
-          id: Date.now().toString(),
+        const { data } = await TasksService.createTask({
           title: taskData.title!,
           description: taskData.description,
-          status: taskData.status || 'created',
+          status: taskData.status,
           label: taskData.label,
-          subtasks: taskData.subtasks || [],
-          startDate: taskData.startDate,
-          endDate: taskData.endDate,
-          projectId: taskData.projectId || null,
-          images: taskData.images || [],
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          projectId: (taskData as any).projectId || taskData.project_id,
+          startDate: (taskData as any).startDate || taskData.start_date ? new Date((taskData as any).startDate || taskData.start_date) : undefined,
+          endDate: (taskData as any).endDate || taskData.end_date ? new Date((taskData as any).endDate || taskData.end_date) : undefined,
+          subtasks: taskData.subtasks,
+        }, user.id)
+
+        if (data) {
+          // Agregar al estado local
+          setTasks(prev => [data, ...prev])
         }
-        await db.tasks.add(newTask)
       }
     } catch (error) {
       console.error('Error saving task:', error)
@@ -94,22 +142,37 @@ export function Dashboard() {
   }
 
   const handleSaveProject = async (projectData: Partial<Project>) => {
+    if (!user) return
+
     try {
       if (projectData.id) {
-        await db.projects.update(projectData.id, projectData)
+        // Actualizar proyecto existente
+        const { data } = await ProjectsService.updateProject(projectData.id, {
+          name: projectData.name,
+          description: projectData.description,
+          color: projectData.color,
+        })
+
+        if (data) {
+          // Actualizar en el estado local
+          setProjects(prev => prev.map(p => p.id === data.id ? data : p))
+        }
       } else {
-        const newProject: Project = {
-          id: Date.now().toString(),
+        // Crear nuevo proyecto
+        const { data } = await ProjectsService.createProject({
           name: projectData.name!,
           description: projectData.description,
           color: projectData.color,
-          createdAt: new Date(),
-        }
-        await db.projects.add(newProject)
+        }, user.id)
 
-        // Si es el primer proyecto, seleccionarlo automáticamente
-        if (projects.length === 0) {
-          setSelectedProjectId(newProject.id)
+        if (data) {
+          // Agregar al estado local
+          setProjects(prev => [data, ...prev])
+
+          // Si es el primer proyecto, seleccionarlo automáticamente
+          if (projects.length === 0) {
+            setSelectedProjectId(data.id)
+          }
         }
       }
     } catch (error) {
@@ -119,9 +182,12 @@ export function Dashboard() {
 
   const handleDeleteTask = async (taskId: string) => {
     try {
-      await db.tasks.delete(taskId)
-      // También eliminar comentarios asociados
-      await db.comments.where('taskId').equals(taskId).delete()
+      const { error } = await TasksService.deleteTask(taskId)
+
+      if (!error) {
+        // Eliminar del estado local
+        setTasks(prev => prev.filter(t => t.id !== taskId))
+      }
     } catch (error) {
       console.error('Error deleting task:', error)
     }
@@ -132,10 +198,12 @@ export function Dashboard() {
     newStatus: TaskStatus
   ) => {
     try {
-      await db.tasks.update(taskId, {
-        status: newStatus,
-        updatedAt: new Date(),
-      })
+      const { data } = await TasksService.updateTaskStatus(taskId, newStatus)
+
+      if (data) {
+        // Actualizar en el estado local
+        setTasks(prev => prev.map(t => t.id === data.id ? data : t))
+      }
     } catch (error) {
       console.error('Error updating task status:', error)
     }
@@ -143,17 +211,23 @@ export function Dashboard() {
 
   const handleDeleteProject = async (projectId: string) => {
     try {
-      // Desasociar tareas del proyecto (no las eliminamos)
-      const projectTasks = tasks.filter(t => t.projectId === projectId)
-      for (const task of projectTasks) {
-        await db.tasks.update(task.id, { projectId: null })
-      }
+      const { error } = await ProjectsService.deleteProject(projectId)
 
-      await db.projects.delete(projectId)
+      if (!error) {
+        // Eliminar del estado local
+        setProjects(prev => prev.filter(p => p.id !== projectId))
 
-      // Si era el proyecto seleccionado, deseleccionarlo
-      if (selectedProjectId === projectId) {
-        setSelectedProjectId(null)
+        // Desasociar tareas del proyecto (actualizar en estado local)
+        setTasks(prev => prev.map(t =>
+          t.project_id === projectId
+            ? { ...t, project_id: null }
+            : t
+        ))
+
+        // Si era el proyecto seleccionado, deseleccionarlo
+        if (selectedProjectId === projectId) {
+          setSelectedProjectId(null)
+        }
       }
     } catch (error) {
       console.error('Error deleting project:', error)
@@ -162,6 +236,17 @@ export function Dashboard() {
 
   const handleSelectProject = (projectId: string | null) => {
     setSelectedProjectId(projectId)
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando datos...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
