@@ -1,9 +1,10 @@
-import { List, Kanban, Calendar, FolderKanban, Plus, Folder, Edit, Trash2, Moon, Sun } from 'lucide-react'
+import { List, Kanban, Calendar, FolderKanban, Plus, Folder, Edit, Trash2, Moon, Sun, LogOut, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from './ui/button'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion'
 import type { Project, Task } from '@/lib/types'
 import { useConfirm } from '@/hooks/useConfirm'
+import { useAuth } from '@/contexts/AuthContext'
 
 export type ViewType = 'list' | 'kanban' | 'calendar'
 
@@ -47,6 +48,21 @@ export function Layout({
 }: LayoutProps) {
   const sidebarOpen = true
   const { confirm, ConfirmDialog } = useConfirm()
+  const { profile, signOut } = useAuth()
+
+  const handleSignOut = async () => {
+    const confirmed = await confirm({
+      title: 'Cerrar sesión',
+      description: '¿Estás seguro de que quieres cerrar sesión?',
+      confirmText: 'Cerrar sesión',
+      cancelText: 'Cancelar',
+      variant: 'default',
+    })
+
+    if (confirmed) {
+      await signOut()
+    }
+  }
 
   const views = [
     { id: 'list' as ViewType, name: 'Lista', icon: List },
@@ -92,6 +108,32 @@ export function Layout({
             </button>
           </div>
           <p className="text-sm text-muted-foreground">{totalTasks} tareas totales</p>
+
+          {/* User info and logout */}
+          {profile && (
+            <div className="mt-3 pt-3 border-t border-border">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <User className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                    <p className="text-xs font-medium text-foreground truncate">
+                      {profile.full_name || profile.email}
+                    </p>
+                  </div>
+                  <p className="text-xs text-muted-foreground capitalize ml-5">
+                    {profile.role === 'admin' ? 'Administrador' : 'Cliente'}
+                  </p>
+                </div>
+                <button
+                  onClick={handleSignOut}
+                  className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-muted-foreground hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                  title="Cerrar sesión"
+                >
+                  <LogOut className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         <nav className="flex-1 p-4 flex flex-col overflow-hidden">
@@ -109,16 +151,24 @@ export function Layout({
               <AccordionTrigger className="text-xs font-semibold text-muted-foreground uppercase px-3 py-2 hover:no-underline hover:bg-accent rounded-lg">
                 <div className="flex items-center justify-between w-full pr-2">
                   <span>Proyectos</span>
-                  <button
+                  <span
                     onClick={(e) => {
                       e.stopPropagation()
                       onNewProject()
                     }}
-                    className="text-muted-foreground hover:text-foreground transition-colors"
+                    className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                     title="Nuevo Proyecto"
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.stopPropagation()
+                        onNewProject()
+                      }
+                    }}
                   >
                     <Plus className="h-3 w-3" />
-                  </button>
+                  </span>
                 </div>
               </AccordionTrigger>
               <AccordionContent className="space-y-1 pt-2">
