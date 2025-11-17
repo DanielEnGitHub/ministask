@@ -9,6 +9,7 @@ import { STATUS_CONFIG, LABEL_CONFIG } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import { useConfirm } from '@/hooks/useConfirm'
+import { usePermissions } from '@/hooks/usePermissions'
 
 interface ListViewProps {
   tasks: Task[]
@@ -19,6 +20,7 @@ interface ListViewProps {
 export function ListView({ tasks, onEditTask, onDeleteTask }: ListViewProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const { confirm, ConfirmDialog } = useConfirm()
+  const permissions = usePermissions()
 
   const filteredTasks = useMemo(() => {
     return tasks.filter((task) => {
@@ -129,30 +131,32 @@ export function ListView({ tasks, onEditTask, onDeleteTask }: ListViewProps) {
                       size="icon"
                       variant="ghost"
                       onClick={() => onEditTask(task)}
-                      title="Ver detalles"
+                      title={permissions.canEditTask ? "Editar tarea" : "Ver detalles"}
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={async () => {
-                        const confirmed = await confirm({
-                          title: 'Eliminar tarea',
-                          description: `¿Estás seguro de que quieres eliminar "${task.title}"? Esta acción no se puede deshacer.`,
-                          confirmText: 'Eliminar',
-                          cancelText: 'Cancelar',
-                          variant: 'destructive',
-                        })
-                        if (confirmed) {
-                          onDeleteTask(task.id)
-                        }
-                      }}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                      title="Eliminar tarea"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    {permissions.canDeleteTask && (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={async () => {
+                          const confirmed = await confirm({
+                            title: 'Eliminar tarea',
+                            description: `¿Estás seguro de que quieres eliminar "${task.title}"? Esta acción no se puede deshacer.`,
+                            confirmText: 'Eliminar',
+                            cancelText: 'Cancelar',
+                            variant: 'destructive',
+                          })
+                          if (confirmed) {
+                            onDeleteTask(task.id)
+                          }
+                        }}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        title="Eliminar tarea"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                 </div>
               </CardHeader>

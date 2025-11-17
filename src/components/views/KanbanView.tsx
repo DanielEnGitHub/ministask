@@ -8,6 +8,7 @@ import { STATUS_CONFIG, LABEL_CONFIG } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import { useConfirm } from '@/hooks/useConfirm'
+import { usePermissions } from '@/hooks/usePermissions'
 
 interface KanbanViewProps {
   tasks: Task[]
@@ -31,6 +32,7 @@ export function KanbanView({
   onUpdateTaskStatus,
 }: KanbanViewProps) {
   const { confirm, ConfirmDialog } = useConfirm()
+  const permissions = usePermissions()
 
   const tasksByStatus = STATUS_ORDER.reduce((acc, status) => {
     acc[status] = tasks.filter((task) => task.status === status)
@@ -92,6 +94,7 @@ export function KanbanView({
                         key={task.id}
                         draggableId={task.id}
                         index={index}
+                        isDragDisabled={!permissions.canChangeTaskStatus}
                       >
                         {(provided, snapshot) => (
                           <Card
@@ -99,7 +102,10 @@ export function KanbanView({
                             {...provided.draggableProps}
                             {...provided.dragHandleProps}
                             className={cn(
-                              'cursor-move hover:shadow-md transition-shadow',
+                              permissions.canChangeTaskStatus
+                                ? 'cursor-move'
+                                : 'cursor-default',
+                              'hover:shadow-md transition-shadow',
                               snapshot.isDragging && 'shadow-lg rotate-2'
                             )}
                           >
@@ -131,31 +137,33 @@ export function KanbanView({
                                         e.stopPropagation()
                                         onEditTask(task)
                                       }}
-                                      title="Ver detalles"
+                                      title={permissions.canEditTask ? "Editar tarea" : "Ver detalles"}
                                     >
                                       <Eye className="h-3 w-3" />
                                     </Button>
-                                    <Button
-                                      size="icon"
-                                      variant="ghost"
-                                      className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                      onClick={async (e) => {
-                                        e.stopPropagation()
-                                        const confirmed = await confirm({
-                                          title: 'Eliminar tarea',
-                                          description: `¿Estás seguro de que quieres eliminar "${task.title}"? Esta acción no se puede deshacer.`,
-                                          confirmText: 'Eliminar',
-                                          cancelText: 'Cancelar',
-                                          variant: 'destructive',
-                                        })
-                                        if (confirmed) {
-                                          onDeleteTask(task.id)
-                                        }
-                                      }}
-                                      title="Eliminar tarea"
-                                    >
-                                      <Trash2 className="h-3 w-3" />
-                                    </Button>
+                                    {permissions.canDeleteTask && (
+                                      <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                        onClick={async (e) => {
+                                          e.stopPropagation()
+                                          const confirmed = await confirm({
+                                            title: 'Eliminar tarea',
+                                            description: `¿Estás seguro de que quieres eliminar "${task.title}"? Esta acción no se puede deshacer.`,
+                                            confirmText: 'Eliminar',
+                                            cancelText: 'Cancelar',
+                                            variant: 'destructive',
+                                          })
+                                          if (confirmed) {
+                                            onDeleteTask(task.id)
+                                          }
+                                        }}
+                                        title="Eliminar tarea"
+                                      >
+                                        <Trash2 className="h-3 w-3" />
+                                      </Button>
+                                    )}
                                   </div>
                                 </div>
 

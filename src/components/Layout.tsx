@@ -5,6 +5,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './
 import type { Project, Task } from '@/lib/types'
 import { useConfirm } from '@/hooks/useConfirm'
 import { useAuth } from '@/contexts/AuthContext'
+import { usePermissions } from '@/hooks/usePermissions'
 
 export type ViewType = 'list' | 'kanban' | 'calendar'
 
@@ -49,6 +50,7 @@ export function Layout({
   const sidebarOpen = true
   const { confirm, ConfirmDialog } = useConfirm()
   const { profile, signOut } = useAuth()
+  const permissions = usePermissions()
 
   const handleSignOut = async () => {
     const confirmed = await confirm({
@@ -151,32 +153,40 @@ export function Layout({
               <AccordionTrigger className="text-xs font-semibold text-muted-foreground uppercase px-3 py-2 hover:no-underline hover:bg-accent rounded-lg">
                 <div className="flex items-center justify-between w-full pr-2">
                   <span>Proyectos</span>
-                  <span
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onNewProject()
-                    }}
-                    className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                    title="Nuevo Proyecto"
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
+                  {permissions.canCreateProject && (
+                    <span
+                      onClick={(e) => {
                         e.stopPropagation()
                         onNewProject()
-                      }
-                    }}
-                  >
-                    <Plus className="h-3 w-3" />
-                  </span>
+                      }}
+                      className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                      title="Nuevo Proyecto"
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.stopPropagation()
+                          onNewProject()
+                        }
+                      }}
+                    >
+                      <Plus className="h-3 w-3" />
+                    </span>
+                  )}
                 </div>
               </AccordionTrigger>
               <AccordionContent className="space-y-1 pt-2">
                 {projects.length === 0 ? (
-                  <Button onClick={onNewProject} variant="outline" className="w-full" size="sm">
-                    <Folder className="h-4 w-4 mr-2" />
-                    Crear Proyecto
-                  </Button>
+                  permissions.canCreateProject ? (
+                    <Button onClick={onNewProject} variant="outline" className="w-full" size="sm">
+                      <Folder className="h-4 w-4 mr-2" />
+                      Crear Proyecto
+                    </Button>
+                  ) : (
+                    <p className="text-xs text-muted-foreground px-3 py-2">
+                      No hay proyectos disponibles
+                    </p>
+                  )
                 ) : (
                   <>
                     <button
@@ -210,37 +220,43 @@ export function Layout({
                           <span className="flex-1 text-left truncate">{project.name}</span>
                         </button>
 
-                        <div className="absolute right-2 top-2 hidden group-hover:flex gap-1">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              onEditProject?.(project)
-                            }}
-                            className="p-1 hover:bg-gray-200 rounded"
-                            title="Editar"
-                          >
-                            <Edit className="h-3 w-3" />
-                          </button>
-                          <button
-                            onClick={async (e) => {
-                              e.stopPropagation()
-                              const confirmed = await confirm({
-                                title: 'Eliminar proyecto',
-                                description: `¿Estás seguro de que quieres eliminar el proyecto "${project.name}"? Las tareas asociadas no se eliminarán, pero se desasociarán del proyecto.`,
-                                confirmText: 'Eliminar',
-                                cancelText: 'Cancelar',
-                                variant: 'destructive',
-                              })
-                              if (confirmed) {
-                                onDeleteProject?.(project.id)
-                              }
-                            }}
-                            className="p-1 hover:bg-red-100 text-red-600 rounded"
-                            title="Eliminar"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </button>
-                        </div>
+                        {(permissions.canEditProject || permissions.canDeleteProject) && (
+                          <div className="absolute right-2 top-2 hidden group-hover:flex gap-1">
+                            {permissions.canEditProject && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  onEditProject?.(project)
+                                }}
+                                className="p-1 hover:bg-gray-200 rounded"
+                                title="Editar"
+                              >
+                                <Edit className="h-3 w-3" />
+                              </button>
+                            )}
+                            {permissions.canDeleteProject && (
+                              <button
+                                onClick={async (e) => {
+                                  e.stopPropagation()
+                                  const confirmed = await confirm({
+                                    title: 'Eliminar proyecto',
+                                    description: `¿Estás seguro de que quieres eliminar el proyecto "${project.name}"? Las tareas asociadas no se eliminarán, pero se desasociarán del proyecto.`,
+                                    confirmText: 'Eliminar',
+                                    cancelText: 'Cancelar',
+                                    variant: 'destructive',
+                                  })
+                                  if (confirmed) {
+                                    onDeleteProject?.(project.id)
+                                  }
+                                }}
+                                className="p-1 hover:bg-red-100 text-red-600 rounded"
+                                title="Eliminar"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </>
