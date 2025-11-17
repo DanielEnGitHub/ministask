@@ -1,11 +1,10 @@
 import Dexie, { type EntityTable } from 'dexie';
-import type { Task, Comment, Project, Sprint } from './types';
+import type { Task, Comment, Project } from './types';
 
 const db = new Dexie('MiniTasksDB') as Dexie & {
   tasks: EntityTable<Task, 'id'>;
   comments: EntityTable<Comment, 'id'>;
   projects: EntityTable<Project, 'id'>;
-  sprints: EntityTable<Sprint, 'id'>;
 };
 
 db.version(1).stores({
@@ -103,6 +102,22 @@ db.version(6).stores({
       recurrence: undefined,
       parentTaskId: undefined,
       timeTracking: undefined
+    })
+  }
+});
+
+// Versión 7: Eliminar tabla sprints y campo sprintId de tareas
+db.version(7).stores({
+  tasks: 'id, title, status, label, projectId, createdAt, startDate, endDate',
+  comments: 'id, taskId, createdAt',
+  projects: 'id, name, createdAt',
+  sprints: null // null elimina la tabla
+}).upgrade(async trans => {
+  // Limpiar campo sprintId de tareas existentes
+  const allTasks = await trans.table('tasks').toArray()
+  for (const task of allTasks) {
+    await trans.table('tasks').update(task.id, {
+      sprintId: undefined
     })
   }
 });

@@ -25,7 +25,6 @@ export interface Task {
   startDate?: Date;
   endDate?: Date;
   projectId?: string | null;
-  sprintId?: string | null;
   images?: string[]; // URLs o base64 de imágenes adjuntas
   createdAt: Date;
   updatedAt: Date;
@@ -35,48 +34,6 @@ export interface Project {
   id: string;
   name: string;
   description?: string;
-  color?: string;
-  createdAt: Date;
-}
-
-export type SprintStatus = 'pending' | 'active' | 'completed';
-
-export interface Sprint {
-  id: string;
-  name: string;
-  description?: string;
-  projectIds: string[]; // Ahora un sprint puede pertenecer a múltiples proyectos
-  startDate: Date;
-  endDate: Date;
-  status: SprintStatus; // Estado del sprint
-  order: number; // Orden en la cola de sprints
-  createdAt: Date;
-}
-
-export const SPRINT_STATUS_CONFIG: Record<SprintStatus, { label: string; color: string; bgColor: string }> = {
-  pending: {
-    label: 'Pendiente',
-    color: 'text-gray-700',
-    bgColor: 'bg-gray-100'
-  },
-  active: {
-    label: 'Activo',
-    color: 'text-green-700',
-    bgColor: 'bg-green-100'
-  },
-  completed: {
-    label: 'Completado',
-    color: 'text-blue-700',
-    bgColor: 'bg-blue-100'
-  }
-};
-
-// Mantenemos TaskRange por compatibilidad (deprecated)
-export interface TaskRange {
-  id: string;
-  name: string;
-  startDate?: Date;
-  endDate?: Date;
   color?: string;
   createdAt: Date;
 }

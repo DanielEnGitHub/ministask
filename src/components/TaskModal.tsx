@@ -6,7 +6,7 @@ import { Textarea } from './ui/textarea'
 import { Button } from './ui/button'
 import { Select } from './ui/select'
 import { Badge } from './ui/badge'
-import type { Task, TaskStatus, TaskLabel, SubTask, Project, Sprint } from '@/lib/types'
+import type { Task, TaskStatus, TaskLabel, SubTask, Project } from '@/lib/types'
 import { STATUS_CONFIG, LABEL_CONFIG } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { toDateInputValue } from '@/lib/dateUtils'
@@ -17,11 +17,10 @@ interface TaskModalProps {
   onSave: (task: Partial<Task>) => void
   task?: Task | null
   projects?: Project[]
-  sprints?: Sprint[]
   currentProjectId?: string | null
 }
 
-export function TaskModal({ open, onClose, onSave, task, projects = [], sprints = [], currentProjectId }: TaskModalProps) {
+export function TaskModal({ open, onClose, onSave, task, projects = [], currentProjectId }: TaskModalProps) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [status, setStatus] = useState<TaskStatus>('created')
@@ -31,18 +30,7 @@ export function TaskModal({ open, onClose, onSave, task, projects = [], sprints 
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [projectId, setProjectId] = useState<string>('')
-  const [sprintId, setSprintId] = useState<string>('')
   const [images, setImages] = useState<string[]>([])
-
-  // Filtrar sprints por proyecto seleccionado (solo activos o pendientes)
-  const filteredSprints = sprints.filter(s =>
-    projectId &&
-    s.projectIds.includes(projectId) &&
-    (s.status === 'active' || s.status === 'pending')
-  )
-
-  // Encontrar sprint activo del proyecto
-  const activeSprint = filteredSprints.find(s => s.status === 'active')
 
   useEffect(() => {
     if (task) {
@@ -54,19 +42,11 @@ export function TaskModal({ open, onClose, onSave, task, projects = [], sprints 
       setStartDate(toDateInputValue(task.startDate))
       setEndDate(toDateInputValue(task.endDate))
       setProjectId(task.projectId || '')
-      setSprintId(task.sprintId || '')
       setImages(task.images || [])
     } else {
       resetForm()
     }
   }, [task, open, currentProjectId])
-
-  // Auto-seleccionar sprint activo cuando cambia el proyecto
-  useEffect(() => {
-    if (!task && projectId && activeSprint) {
-      setSprintId(activeSprint.id)
-    }
-  }, [projectId, activeSprint, task])
 
   const resetForm = () => {
     setTitle('')
@@ -78,7 +58,6 @@ export function TaskModal({ open, onClose, onSave, task, projects = [], sprints 
     setStartDate('')
     setEndDate('')
     setProjectId(currentProjectId || '')
-    setSprintId('')
     setImages([])
   }
 
@@ -143,7 +122,6 @@ export function TaskModal({ open, onClose, onSave, task, projects = [], sprints 
       startDate: startDate ? new Date(startDate + 'T00:00:00') : undefined,
       endDate: endDate ? new Date(endDate + 'T00:00:00') : undefined,
       projectId: projectId || null,
-      sprintId: sprintId || null,
       images: images.length > 0 ? images : undefined,
       updatedAt: new Date(),
       ...(!task?.id && { createdAt: new Date() }),
@@ -244,24 +222,7 @@ export function TaskModal({ open, onClose, onSave, task, projects = [], sprints 
               <>
                 <Select
                   value={projectId}
-                  onChange={(e) => {
-                    const newProjectId = e.target.value
-                    setProjectId(newProjectId)
-
-                    // Auto-asignar sprint activo del proyecto
-                    if (newProjectId) {
-                      const projectSprints = sprints.filter(s =>
-                        s.projectIds.includes(newProjectId) && s.status === 'active'
-                      )
-                      if (projectSprints.length > 0) {
-                        setSprintId(projectSprints[0].id)
-                      } else {
-                        setSprintId('')
-                      }
-                    } else {
-                      setSprintId('')
-                    }
-                  }}
+                  onChange={(e) => setProjectId(e.target.value)}
                   required
                 >
                   <option value="">Selecciona un proyecto</option>
@@ -271,13 +232,6 @@ export function TaskModal({ open, onClose, onSave, task, projects = [], sprints 
                     </option>
                   ))}
                 </Select>
-
-                {/* Mostrar sprint asignado automáticamente */}
-                {projectId && activeSprint && (
-                  <p className="text-xs text-gray-500 mt-1.5">
-                    Sprint asignado: <span className="font-medium text-blue-600">{activeSprint.name}</span>
-                  </p>
-                )}
               </>
             )}
           </div>

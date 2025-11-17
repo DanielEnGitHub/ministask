@@ -1,9 +1,8 @@
-import { List, Kanban, Calendar, FolderKanban, Plus, Folder, Edit, Trash2, Target, Moon, Sun, Play, CheckCircle2 } from 'lucide-react'
+import { List, Kanban, Calendar, FolderKanban, Plus, Folder, Edit, Trash2, Moon, Sun } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from './ui/button'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion'
-import type { Project, Sprint, Task } from '@/lib/types'
-import { SPRINT_STATUS_CONFIG } from '@/lib/types'
+import type { Project, Task } from '@/lib/types'
 import { useConfirm } from '@/hooks/useConfirm'
 
 export type ViewType = 'list' | 'kanban' | 'calendar'
@@ -13,7 +12,6 @@ interface LayoutProps {
   onViewChange: (view: ViewType) => void
   onNewTask: () => void
   onNewProject: () => void
-  onNewSprint: () => void
   children: React.ReactNode
   taskCounts?: {
     created: number
@@ -23,16 +21,11 @@ interface LayoutProps {
     completed: number
   }
   projects?: Project[]
-  sprints?: Sprint[]
   tasks?: Task[]
   selectedProjectId?: string | null
   onSelectProject?: (projectId: string | null) => void
   onEditProject?: (project: Project) => void
   onDeleteProject?: (projectId: string) => void
-  onEditSprint?: (sprint: Sprint) => void
-  onDeleteSprint?: (sprintId: string) => void
-  onCompleteSprint?: (sprintId: string) => void
-  onActivateSprint?: (sprintId: string) => void
   theme?: 'light' | 'dark'
   onToggleTheme?: () => void
 }
@@ -42,20 +35,13 @@ export function Layout({
   onViewChange,
   onNewTask,
   onNewProject,
-  onNewSprint,
   children,
   taskCounts,
   projects = [],
-  sprints = [],
-  tasks = [],
   selectedProjectId,
   onSelectProject,
   onEditProject,
   onDeleteProject,
-  onEditSprint,
-  onDeleteSprint,
-  onCompleteSprint: _onCompleteSprint,
-  onActivateSprint: _onActivateSprint,
   theme = 'light',
   onToggleTheme,
 }: LayoutProps) {
@@ -73,11 +59,6 @@ export function Layout({
     : 0
 
   const selectedProject = projects.find(p => p.id === selectedProjectId)
-
-  // Filtrar sprints: si hay proyecto seleccionado, mostrar sprints que lo incluyan
-  const filteredSprints = selectedProjectId
-    ? sprints.filter(s => s.projectIds.includes(selectedProjectId))
-    : sprints
 
   // Determinar el título del filtro activo
   const getFilterLabel = () => {
@@ -122,7 +103,7 @@ export function Layout({
           </div>
 
           <div className="flex-1 overflow-y-auto space-y-2">
-            <Accordion type="multiple" className="space-y-2" defaultValue={['proyectos', 'sprints', 'vistas']}>
+            <Accordion type="multiple" className="space-y-2" defaultValue={['proyectos', 'vistas']}>
             {/* Proyectos */}
             <AccordionItem value="proyectos" className="border-none">
               <AccordionTrigger className="text-xs font-semibold text-muted-foreground uppercase px-3 py-2 hover:no-underline hover:bg-accent rounded-lg">
@@ -213,136 +194,6 @@ export function Layout({
                       </div>
                     ))}
                   </>
-                )}
-              </AccordionContent>
-            </AccordionItem>
-
-            {/* Sprints */}
-            <AccordionItem value="sprints" className="border-none">
-              <AccordionTrigger className="text-xs font-semibold text-muted-foreground uppercase px-3 py-2 hover:no-underline hover:bg-accent rounded-lg">
-                <div className="flex items-center justify-between w-full pr-2">
-                  <span>Sprints</span>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onNewSprint()
-                    }}
-                    className="text-muted-foreground hover:text-foreground transition-colors"
-                    title="Nuevo Sprint"
-                  >
-                    <Plus className="h-3 w-3" />
-                  </button>
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="space-y-1 pt-2">
-                {sprints.length === 0 ? (
-                  <Button onClick={onNewSprint} variant="outline" className="w-full" size="sm">
-                    <Target className="h-4 w-4 mr-2" />
-                    Nuevo Sprint
-                  </Button>
-                ) : filteredSprints.length === 0 ? (
-                  <p className="text-xs text-muted-foreground text-center py-4">
-                    {selectedProject ? 'No hay sprints para este proyecto' : 'No hay sprints'}
-                  </p>
-                ) : (
-                  filteredSprints.map((sprint) => {
-                    const sprintProjects = projects.filter(p => sprint.projectIds.includes(p.id))
-                    const sprintTasks = tasks.filter(t => t.sprintId === sprint.id)
-                    const completedTasks = sprintTasks.filter(t => t.status === 'completed').length
-                    const totalTasks = sprintTasks.length
-                    const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
-
-                    const statusConfig = SPRINT_STATUS_CONFIG[sprint.status]
-
-                    return (
-                      <div key={sprint.id} className="group relative">
-                        <div className="w-full px-3 py-2 pr-20 rounded-xl text-sm text-left hover:bg-accent">
-                          <div className="flex items-center gap-2 mb-1">
-                            {sprint.status === 'active' ? (
-                              <Play className="h-3 w-3 flex-shrink-0 text-green-600" />
-                            ) : sprint.status === 'completed' ? (
-                              <CheckCircle2 className="h-3 w-3 flex-shrink-0 text-blue-600" />
-                            ) : (
-                              <Target className="h-3 w-3 flex-shrink-0 text-gray-400" />
-                            )}
-                            <span className="flex-1 truncate font-medium text-foreground">{sprint.name}</span>
-                            <span className={cn("text-xs px-2 py-0.5 rounded-full", statusConfig.bgColor, statusConfig.color)}>
-                              {statusConfig.label}
-                            </span>
-                          </div>
-                          <div className="text-xs text-muted-foreground ml-5 space-y-1.5">
-                            <div>
-                              {new Date(sprint.startDate).toLocaleDateString()} - {new Date(sprint.endDate).toLocaleDateString()}
-                            </div>
-                            {totalTasks > 0 && (
-                              <div className="space-y-1">
-                                <div className="flex items-center gap-2">
-                                  <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                                    <div
-                                      className="h-full bg-blue-600 rounded-full transition-all"
-                                      style={{ width: `${progress}%` }}
-                                    />
-                                  </div>
-                                  <span className="text-xs font-medium">{progress}%</span>
-                                </div>
-                                <div className="text-xs">
-                                  {completedTasks}/{totalTasks} tareas
-                                </div>
-                              </div>
-                            )}
-                            {sprintProjects.length > 0 && (
-                              <div className="flex items-center gap-1 flex-wrap">
-                                {sprintProjects.map(project => (
-                                  <div
-                                    key={project.id}
-                                    className="flex items-center gap-1"
-                                  >
-                                    <div
-                                      className="w-2 h-2 rounded-full"
-                                      style={{ backgroundColor: project.color || '#3B82F6' }}
-                                    />
-                                    <span className="text-xs">{project.name}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="absolute right-2 top-2 hidden group-hover:flex gap-1">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              onEditSprint?.(sprint)
-                            }}
-                            className="p-1 hover:bg-gray-200 rounded"
-                            title="Editar"
-                          >
-                            <Edit className="h-3 w-3" />
-                          </button>
-                          <button
-                            onClick={async (e) => {
-                              e.stopPropagation()
-                              const confirmed = await confirm({
-                                title: 'Eliminar sprint',
-                                description: `¿Estás seguro de que quieres eliminar el sprint "${sprint.name}"? Las tareas asociadas se desasociarán del sprint.`,
-                                confirmText: 'Eliminar',
-                                cancelText: 'Cancelar',
-                                variant: 'destructive',
-                              })
-                              if (confirmed) {
-                                onDeleteSprint?.(sprint.id)
-                              }
-                            }}
-                            className="p-1 hover:bg-red-100 text-red-600 rounded"
-                            title="Eliminar"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </button>
-                        </div>
-                      </div>
-                    )
-                  })
                 )}
               </AccordionContent>
             </AccordionItem>

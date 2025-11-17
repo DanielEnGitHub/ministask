@@ -3,9 +3,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
 import { cn } from '@/lib/utils'
-import type { Task, Project, Sprint } from '@/lib/types'
+import type { Task, Project } from '@/lib/types'
 import { STATUS_CONFIG } from '@/lib/types'
-import { Calendar, Folder, Target, Edit2, CheckSquare, Square } from 'lucide-react'
+import { Calendar, Folder, Edit2, CheckSquare, Square } from 'lucide-react'
 import { db } from '@/lib/db'
 import { formatDateForDisplay } from '@/lib/dateUtils'
 
@@ -14,7 +14,6 @@ interface TaskDetailModalProps {
   onClose: () => void
   task: Task | null
   projects?: Project[]
-  sprints?: Sprint[]
   onEdit: (task: Task) => void
 }
 
@@ -23,7 +22,6 @@ export function TaskDetailModal({
   onClose,
   task,
   projects = [],
-  sprints = [],
   onEdit
 }: TaskDetailModalProps) {
   // Usar useLiveQuery para obtener la tarea actualizada en tiempo real
@@ -38,7 +36,6 @@ export function TaskDetailModal({
   if (!currentTask) return null
 
   const project = projects.find(p => p.id === currentTask.projectId)
-  const sprint = sprints.find(s => s.id === currentTask.sprintId)
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -87,32 +84,16 @@ export function TaskDetailModal({
             </div>
           )}
 
-          {/* Proyecto y Sprint */}
-          {(project || sprint) && (
-            <div className="grid grid-cols-2 gap-4">
-              {project && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-2">
-                    Proyecto
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <Folder className="h-4 w-4 text-gray-400" />
-                    <span className="text-gray-700">{project.name}</span>
-                  </div>
-                </div>
-              )}
-
-              {sprint && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-2">
-                    Sprint
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <Target className="h-4 w-4 text-gray-400" />
-                    <span className="text-gray-700">{sprint.name}</span>
-                  </div>
-                </div>
-              )}
+          {/* Proyecto */}
+          {project && (
+            <div>
+              <label className="block text-sm font-medium text-gray-500 mb-2">
+                Proyecto
+              </label>
+              <div className="flex items-center gap-2">
+                <Folder className="h-4 w-4 text-gray-400" />
+                <span className="text-gray-700">{project.name}</span>
+              </div>
             </div>
           )}
 

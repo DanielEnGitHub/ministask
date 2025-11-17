@@ -4,12 +4,11 @@ import { Layout, type ViewType } from './components/Layout'
 import { TaskModal } from './components/TaskModal'
 import { TaskDetailModal } from './components/TaskDetailModal'
 import { ProjectModal } from './components/ProjectModal'
-import { SprintModal } from './components/SprintModal'
 import { ListView } from './components/views/ListView'
 import { KanbanView } from './components/views/KanbanView'
 import { CalendarView } from './components/views/CalendarView'
 import { db } from './lib/db'
-import type { Task, TaskStatus, Project, Sprint } from './lib/types'
+import type { Task, TaskStatus, Project } from './lib/types'
 import { useTheme } from './hooks/useTheme'
 
 function App() {
@@ -18,17 +17,14 @@ function App() {
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false)
   const [isTaskDetailModalOpen, setIsTaskDetailModalOpen] = useState(false)
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false)
-  const [isSprintModalOpen, setIsSprintModalOpen] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [viewingTask, setViewingTask] = useState<Task | null>(null)
   const [editingProject, setEditingProject] = useState<Project | null>(null)
-  const [editingSprint, setEditingSprint] = useState<Sprint | null>(null)
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
 
   // Cargar datos desde IndexedDB
   const tasks = useLiveQuery(() => db.tasks.toArray()) || []
   const projects = useLiveQuery(() => db.projects.toArray()) || []
-  const sprints = useLiveQuery(() => db.sprints.toArray()) || []
 
   // Filtrar tareas por proyecto seleccionado
   const filteredTasks = selectedProjectId
@@ -69,16 +65,6 @@ function App() {
     setIsProjectModalOpen(true)
   }
 
-  const handleNewSprint = () => {
-    setEditingSprint(null)
-    setIsSprintModalOpen(true)
-  }
-
-  const handleEditSprint = (sprint: Sprint) => {
-    setEditingSprint(sprint)
-    setIsSprintModalOpen(true)
-  }
-
   const handleSaveTask = async (taskData: Partial<Task>) => {
     try {
       if (taskData.id) {
@@ -96,7 +82,6 @@ function App() {
           startDate: taskData.startDate,
           endDate: taskData.endDate,
           projectId: taskData.projectId || null,
-          sprintId: taskData.sprintId || null,
           images: taskData.images || [],
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -132,35 +117,6 @@ function App() {
     }
   }
 
-  const handleSaveSprint = async (sprintData: Partial<Sprint>) => {
-    try {
-      if (sprintData.id) {
-        await db.sprints.update(sprintData.id, sprintData)
-      } else {
-        // Obtener el máximo order actual
-        const allSprints = await db.sprints.toArray()
-        const maxOrder = allSprints.length > 0
-          ? Math.max(...allSprints.map(s => s.order || 0))
-          : -1
-
-        const newSprint: Sprint = {
-          id: Date.now().toString(),
-          name: sprintData.name!,
-          description: sprintData.description,
-          projectIds: sprintData.projectIds || [],
-          startDate: sprintData.startDate!,
-          endDate: sprintData.endDate!,
-          status: 'pending',
-          order: maxOrder + 1,
-          createdAt: new Date(),
-        }
-        await db.sprints.add(newSprint)
-      }
-    } catch (error) {
-      console.error('Error saving sprint:', error)
-    }
-  }
-
   const handleDeleteTask = async (taskId: string) => {
     try {
       await db.tasks.delete(taskId)
@@ -187,17 +143,10 @@ function App() {
 
   const handleDeleteProject = async (projectId: string) => {
     try {
-      // Actualizar sprints que incluyen este proyecto
-      const affectedSprints = sprints.filter(s => s.projectIds.includes(projectId))
-      for (const sprint of affectedSprints) {
-        const newProjectIds = sprint.projectIds.filter(id => id !== projectId)
-        await db.sprints.update(sprint.id, { projectIds: newProjectIds })
-      }
-
       // Desasociar tareas del proyecto (no las eliminamos)
       const projectTasks = tasks.filter(t => t.projectId === projectId)
       for (const task of projectTasks) {
-        await db.tasks.update(task.id, { projectId: null, sprintId: null })
+        await db.tasks.update(task.id, { projectId: null })
       }
 
       await db.projects.delete(projectId)
@@ -211,65 +160,6 @@ function App() {
     }
   }
 
-  const handleDeleteSprint = async (sprintId: string) => {
-    try {
-      // Desasociar tareas del sprint
-      const sprintTasks = tasks.filter(t => t.sprintId === sprintId)
-      for (const task of sprintTasks) {
-        await db.tasks.update(task.id, { sprintId: null })
-      }
-
-      await db.sprints.delete(sprintId)
-    } catch (error) {
-      console.error('Error deleting sprint:', error)
-    }
-  }
-
-  const handleCompleteSprint = async (sprintId: string) => {
-    try {
-      const sprint = sprints.find(s => s.id === sprintId)
-      if (!sprint) return
-
-      // Marcar sprint como completado
-      await db.sprints.update(sprintId, { status: 'completed' })
-
-      // Encontrar el siguiente sprint pendiente con el mismo conjunto de proyectos
-      const nextSprint = sprints
-        .filter(s =>
-          s.status === 'pending' &&
-          s.order > sprint.order &&
-          s.projectIds.some(pid => sprint.projectIds.includes(pid))
-        )
-        .sort((a, b) => a.order - b.order)[0]
-
-      if (nextSprint) {
-        // Activar el siguiente sprint
-        await db.sprints.update(nextSprint.id, { status: 'active' })
-
-        // Mover tareas incompletas al siguiente sprint
-        const incompleteTasks = tasks.filter(t =>
-          t.sprintId === sprintId &&
-          t.status !== 'completed' &&
-          t.status !== 'cancelled'
-        )
-
-        for (const task of incompleteTasks) {
-          await db.tasks.update(task.id, { sprintId: nextSprint.id })
-        }
-      }
-    } catch (error) {
-      console.error('Error completing sprint:', error)
-    }
-  }
-
-  const handleActivateSprint = async (sprintId: string) => {
-    try {
-      await db.sprints.update(sprintId, { status: 'active' })
-    } catch (error) {
-      console.error('Error activating sprint:', error)
-    }
-  }
-
   const handleSelectProject = (projectId: string | null) => {
     setSelectedProjectId(projectId)
   }
@@ -280,19 +170,13 @@ function App() {
       onViewChange={setCurrentView}
       onNewTask={handleNewTask}
       onNewProject={handleNewProject}
-      onNewSprint={handleNewSprint}
       taskCounts={taskCounts}
       projects={projects}
-      sprints={sprints}
       tasks={tasks}
       selectedProjectId={selectedProjectId}
       onSelectProject={handleSelectProject}
       onEditProject={handleEditProject}
       onDeleteProject={handleDeleteProject}
-      onEditSprint={handleEditSprint}
-      onDeleteSprint={handleDeleteSprint}
-      onCompleteSprint={handleCompleteSprint}
-      onActivateSprint={handleActivateSprint}
       theme={theme}
       onToggleTheme={toggleTheme}
     >
@@ -327,7 +211,6 @@ function App() {
         onSave={handleSaveTask}
         task={editingTask}
         projects={projects}
-        sprints={sprints}
         currentProjectId={selectedProjectId}
       />
 
@@ -336,7 +219,6 @@ function App() {
         onClose={() => setIsTaskDetailModalOpen(false)}
         task={viewingTask}
         projects={projects}
-        sprints={sprints}
         onEdit={handleEditTask}
       />
 
@@ -345,15 +227,6 @@ function App() {
         onClose={() => setIsProjectModalOpen(false)}
         onSave={handleSaveProject}
         project={editingProject}
-      />
-
-      <SprintModal
-        open={isSprintModalOpen}
-        onClose={() => setIsSprintModalOpen(false)}
-        onSave={handleSaveSprint}
-        sprint={editingSprint}
-        projects={projects}
-        currentProjectId={selectedProjectId || undefined}
       />
     </Layout>
   )

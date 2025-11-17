@@ -2,20 +2,19 @@ import { useMemo } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog'
 import { Badge } from './ui/badge'
 import { cn } from '@/lib/utils'
-import type { Task, Project, Sprint } from '@/lib/types'
+import type { Task, Project } from '@/lib/types'
 import { STATUS_CONFIG } from '@/lib/types'
-import { Calendar, Folder, Target } from 'lucide-react'
+import { Calendar, Folder } from 'lucide-react'
 
 interface HistoryModalProps {
   open: boolean
   onClose: () => void
   tasks: Task[]
   projects?: Project[]
-  sprints?: Sprint[]
   onEditTask: (task: Task) => void
 }
 
-export function HistoryModal({ open, onClose, tasks, projects = [], sprints = [], onEditTask }: HistoryModalProps) {
+export function HistoryModal({ open, onClose, tasks, projects = [], onEditTask }: HistoryModalProps) {
   // Ordenar tareas por fecha de creación (más recientes primero)
   const sortedTasks = useMemo(() => {
     return [...tasks].sort((a, b) => {
@@ -26,11 +25,6 @@ export function HistoryModal({ open, onClose, tasks, projects = [], sprints = []
   const getProjectName = (projectId?: string | null) => {
     if (!projectId) return null
     return projects.find(p => p.id === projectId)?.name
-  }
-
-  const getSprintName = (sprintId?: string | null) => {
-    if (!sprintId) return null
-    return sprints.find(s => s.id === sprintId)?.name
   }
 
   const formatDate = (date: Date) => {
@@ -61,7 +55,6 @@ export function HistoryModal({ open, onClose, tasks, projects = [], sprints = []
           ) : (
             sortedTasks.map((task) => {
               const projectName = getProjectName(task.projectId)
-              const sprintName = getSprintName(task.sprintId)
 
               return (
                 <div
@@ -105,13 +98,6 @@ export function HistoryModal({ open, onClose, tasks, projects = [], sprints = []
                           <div className="flex items-center gap-1">
                             <Folder className="h-3 w-3" />
                             <span>{projectName}</span>
-                          </div>
-                        )}
-
-                        {sprintName && (
-                          <div className="flex items-center gap-1">
-                            <Target className="h-3 w-3" />
-                            <span>{sprintName}</span>
                           </div>
                         )}
 
