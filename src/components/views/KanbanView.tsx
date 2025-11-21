@@ -183,24 +183,28 @@ export function KanbanView({
                                     </div>
                                   )}
 
-                                  {(task.startDate || task.endDate) && (
-                                    <div className="flex items-center gap-1 text-xs text-gray-500">
-                                      <Calendar className="h-3 w-3" />
-                                      <span>
-                                        {task.startDate &&
-                                          format(
-                                            new Date(task.startDate),
-                                            'dd/MM/yy'
-                                          )}
-                                        {task.startDate && task.endDate && ' - '}
-                                        {task.endDate &&
-                                          format(
-                                            new Date(task.endDate),
-                                            'dd/MM/yy'
-                                          )}
-                                      </span>
-                                    </div>
-                                  )}
+                                  {(() => {
+                                    const startDate = (task as any).start_date || (task as any).startDate
+                                    const endDate = (task as any).end_date || (task as any).endDate
+                                    return (startDate || endDate) && (
+                                      <div className="flex items-center gap-1 text-xs text-gray-500">
+                                        <Calendar className="h-3 w-3" />
+                                        <span>
+                                          {startDate &&
+                                            format(
+                                              new Date(startDate),
+                                              'dd/MM/yy'
+                                            )}
+                                          {startDate && endDate && ' - '}
+                                          {endDate &&
+                                            format(
+                                              new Date(endDate),
+                                              'dd/MM/yy'
+                                            )}
+                                        </span>
+                                      </div>
+                                    )
+                                  })()}
                                 </div>
                               </div>
                             </CardContent>

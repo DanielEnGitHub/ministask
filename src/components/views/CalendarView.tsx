@@ -37,25 +37,36 @@ export function CalendarView({
   const monthEnd = endOfMonth(currentMonth)
   const days = eachDayOfInterval({ start: monthStart, end: monthEnd })
 
+  // Helper functions to handle both camelCase and snake_case
+  const getStartDate = (task: Task): Date | string | null => {
+    return (task as any).start_date || (task as any).startDate || null
+  }
+
+  const getEndDate = (task: Task): Date | string | null => {
+    return (task as any).end_date || (task as any).endDate || null
+  }
+
   const tasksWithDates = useMemo(() => {
-    return tasks.filter((task) => task.startDate || task.endDate)
+    return tasks.filter((task) => getStartDate(task) || getEndDate(task))
   }, [tasks])
 
   const getTasksForDay = (day: Date) => {
     return tasksWithDates.filter((task) => {
       const dayNormalized = normalizeDate(day)
+      const startDate = getStartDate(task)
+      const endDate = getEndDate(task)
 
-      if (task.startDate && task.endDate) {
-        return isDateInRange(dayNormalized, task.startDate, task.endDate)
+      if (startDate && endDate) {
+        return isDateInRange(dayNormalized, startDate, endDate)
       }
 
-      if (task.startDate) {
-        const start = normalizeDate(task.startDate)
+      if (startDate) {
+        const start = normalizeDate(startDate)
         return dayNormalized.getTime() === start.getTime()
       }
 
-      if (task.endDate) {
-        const end = normalizeDate(task.endDate)
+      if (endDate) {
+        const end = normalizeDate(endDate)
         return dayNormalized.getTime() === end.getTime()
       }
 
@@ -234,7 +245,7 @@ export function CalendarView({
             </h3>
             <div className="space-y-2">
               {tasks
-                .filter((task) => !task.startDate && !task.endDate)
+                .filter((task) => !getStartDate(task) && !getEndDate(task))
                 .slice(0, 5)
                 .map((task) => (
                   <div

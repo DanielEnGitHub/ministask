@@ -101,6 +101,14 @@ export function Dashboard() {
     if (!user) return
 
     try {
+      // Convertir fechas si vienen como strings del modal
+      const startDate = (taskData as any).startDate
+        ? ((taskData as any).startDate instanceof Date ? (taskData as any).startDate : new Date((taskData as any).startDate))
+        : undefined
+      const endDate = (taskData as any).endDate
+        ? ((taskData as any).endDate instanceof Date ? (taskData as any).endDate : new Date((taskData as any).endDate))
+        : undefined
+
       if (taskData.id) {
         // Actualizar tarea existente
         const { data } = await TasksService.updateTask(taskData.id, {
@@ -109,8 +117,8 @@ export function Dashboard() {
           status: taskData.status,
           label: taskData.label,
           projectId: (taskData as any).projectId || taskData.project_id,
-          startDate: (taskData as any).startDate || taskData.start_date ? new Date((taskData as any).startDate || taskData.start_date) : undefined,
-          endDate: (taskData as any).endDate || taskData.end_date ? new Date((taskData as any).endDate || taskData.end_date) : undefined,
+          startDate,
+          endDate,
           subtasks: taskData.subtasks,
         })
 
@@ -126,8 +134,8 @@ export function Dashboard() {
           status: taskData.status,
           label: taskData.label,
           projectId: (taskData as any).projectId || taskData.project_id,
-          startDate: (taskData as any).startDate || taskData.start_date ? new Date((taskData as any).startDate || taskData.start_date) : undefined,
-          endDate: (taskData as any).endDate || taskData.end_date ? new Date((taskData as any).endDate || taskData.end_date) : undefined,
+          startDate,
+          endDate,
           subtasks: taskData.subtasks,
         }, user.id)
 

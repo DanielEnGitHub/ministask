@@ -111,18 +111,22 @@ export function ListView({ tasks, onEditTask, onDeleteTask }: ListViewProps) {
                         </div>
                       )}
 
-                      {(task.startDate || task.endDate) && (
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          <span>
-                            {task.startDate &&
-                              format(new Date(task.startDate), 'dd/MM/yyyy')}
-                            {task.startDate && task.endDate && ' - '}
-                            {task.endDate &&
-                              format(new Date(task.endDate), 'dd/MM/yyyy')}
-                          </span>
-                        </div>
-                      )}
+                      {(() => {
+                        const startDate = (task as any).start_date || (task as any).startDate
+                        const endDate = (task as any).end_date || (task as any).endDate
+                        return (startDate || endDate) && (
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            <span>
+                              {startDate &&
+                                format(new Date(startDate), 'dd/MM/yyyy')}
+                              {startDate && endDate && ' - '}
+                              {endDate &&
+                                format(new Date(endDate), 'dd/MM/yyyy')}
+                            </span>
+                          </div>
+                        )
+                      })()}
                     </div>
                   </div>
 

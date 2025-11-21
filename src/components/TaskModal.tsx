@@ -36,19 +36,25 @@ export function TaskModal({ open, onClose, onSave, task, projects = [], currentP
 
   useEffect(() => {
     if (task) {
-      setTitle(task.title)
+      // Manejar tanto camelCase como snake_case (Supabase usa snake_case)
+      const taskStartDate = (task as any).start_date || (task as any).startDate
+      const taskEndDate = (task as any).end_date || (task as any).endDate
+      const taskProjectId = (task as any).project_id || (task as any).projectId
+
+      setTitle(task.title || '')
       setDescription(task.description || '')
-      setStatus(task.status)
+      // Mostrar el estado actual de la tarea (los permisos controlan si se puede editar)
+      setStatus(task.status || 'created')
       setLabel(task.label || '')
       setSubtasks(task.subtasks || [])
-      setStartDate(toDateInputValue(task.startDate))
-      setEndDate(toDateInputValue(task.endDate))
-      setProjectId(task.projectId || '')
+      setStartDate(taskStartDate ? toDateInputValue(taskStartDate) : '')
+      setEndDate(taskEndDate ? toDateInputValue(taskEndDate) : '')
+      setProjectId(taskProjectId || currentProjectId || '')
       setImages(task.images || [])
     } else {
       resetForm()
     }
-  }, [task, open, currentProjectId])
+  }, [task, open, currentProjectId, permissions.canChangeTaskStatus])
 
   const resetForm = () => {
     setTitle('')
@@ -184,11 +190,13 @@ export function TaskModal({ open, onClose, onSave, task, projects = [], currentP
                   ))}
                 </SelectContent>
               </Select>
-              <div className="mt-2">
-                <Badge className={cn(STATUS_CONFIG[status].bgColor, STATUS_CONFIG[status].color, 'border-0')}>
-                  {STATUS_CONFIG[status].label}
-                </Badge>
-              </div>
+              {status && STATUS_CONFIG[status] && (
+                <div className="mt-2">
+                  <Badge className={cn(STATUS_CONFIG[status].bgColor, STATUS_CONFIG[status].color, 'border-0')}>
+                    {STATUS_CONFIG[status].label}
+                  </Badge>
+                </div>
+              )}
             </div>
           ) : (
             <div>
@@ -218,10 +226,10 @@ export function TaskModal({ open, onClose, onSave, task, projects = [], currentP
                 ))}
               </SelectContent>
             </Select>
-            {label && (
+            {label && LABEL_CONFIG[label as TaskLabel] && (
               <div className="mt-2">
-                <Badge className={cn(LABEL_CONFIG[label].bgColor, LABEL_CONFIG[label].color, 'border-0')}>
-                  {LABEL_CONFIG[label].icon} {LABEL_CONFIG[label].label}
+                <Badge className={cn(LABEL_CONFIG[label as TaskLabel].bgColor, LABEL_CONFIG[label as TaskLabel].color, 'border-0')}>
+                  {LABEL_CONFIG[label as TaskLabel].icon} {LABEL_CONFIG[label as TaskLabel].label}
                 </Badge>
               </div>
             )}
