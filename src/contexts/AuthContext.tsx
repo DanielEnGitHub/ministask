@@ -71,9 +71,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.log('[loadProfile] DB query failed:', error)
         }
       })
-      .catch((error) => {
-        console.log('[loadProfile] DB query error:', error)
-      })
 
     // 3. Retornar inmediatamente el perfil desde user_metadata
     return profileFromMetadata

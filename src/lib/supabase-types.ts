@@ -166,10 +166,19 @@ export interface Database {
         }
       }
     }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
     Enums: {
       user_role: 'admin' | 'client'
       task_status: 'created' | 'in_progress' | 'paused' | 'cancelled' | 'completed'
       task_label: 'bug' | 'implementacion' | 'mejora' | 'actualizacion' | 'otro'
+    }
+    CompositeTypes: {
+      [_ in never]: never
     }
   }
 }

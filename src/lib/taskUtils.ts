@@ -29,8 +29,8 @@ export function getTaskEndDate(task: any): Date | string | null {
  * Obtiene el ID del proyecto de una tarea
  * Maneja tanto camelCase (projectId) como snake_case (project_id)
  */
-export function getTaskProjectId(task: any): string | null {
-  return task.project_id || task.projectId || null
+export function getTaskProjectId(task: any): string | undefined {
+  return task.project_id || task.projectId || undefined
 }
 
 /**

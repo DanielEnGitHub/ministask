@@ -127,6 +127,7 @@ export async function createTask(input: CreateTaskInput, userId: string) {
       created_by: userId,
     }
 
+    // @ts-ignore - Supabase generated types issue
     const { data, error } = await supabase
       .from('tasks')
       .insert(task)
@@ -166,6 +167,7 @@ export async function updateTask(taskId: string, input: UpdateTaskInput) {
       delete updates.endDate
     }
 
+    // @ts-ignore - Supabase generated types issue
     const { data, error } = await supabase
       .from('tasks')
       .update(updates)
@@ -187,7 +189,8 @@ export async function updateTask(taskId: string, input: UpdateTaskInput) {
  */
 export async function updateTaskStatus(taskId: string, status: TaskStatus) {
   try {
-    const { data, error } = await supabase
+    // @ts-ignore - Supabase generated types issue
+    const { data, error} = await supabase
       .from('tasks')
       .update({
         status,

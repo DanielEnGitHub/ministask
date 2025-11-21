@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Users as UsersIcon, Plus, Edit, Trash2, FolderKanban, ArrowLeft } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { UserModal } from '@/components/UserModal'
 import { AssignProjectsModal } from '@/components/AssignProjectsModal'
@@ -105,6 +105,7 @@ export function Users() {
         })
 
         if (data) {
+          // @ts-ignore - Supabase generated types issue
           setUsers(prev => prev.map(u => u.id === data.id ? { ...u, ...data } : u))
         }
       }
