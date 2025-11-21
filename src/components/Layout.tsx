@@ -1,4 +1,5 @@
-import { List, Kanban, Calendar, FolderKanban, Plus, Folder, Edit, Trash2, Moon, Sun, LogOut, User } from 'lucide-react'
+import { List, Kanban, Calendar, FolderKanban, Plus, Folder, Edit, Trash2, Moon, Sun, LogOut, User, Users } from 'lucide-react'
+import { Link, useLocation } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { Button } from './ui/button'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion'
@@ -51,6 +52,7 @@ export function Layout({
   const { confirm, ConfirmDialog } = useConfirm()
   const { profile, signOut } = useAuth()
   const permissions = usePermissions()
+  const location = useLocation()
 
   const handleSignOut = async () => {
     const confirmed = await confirm({
@@ -139,11 +141,25 @@ export function Layout({
         </div>
 
         <nav className="flex-1 p-4 flex flex-col overflow-hidden">
-          <div className="mb-4">
+          <div className="mb-4 space-y-2">
             <Button onClick={onNewTask} className="w-full" size="sm">
               <Plus className="h-4 w-4 mr-2" />
               Nueva Tarea
             </Button>
+
+            {/* Botón Gestión de Usuarios (solo admin) */}
+            {permissions.canViewAllUsers && (
+              <Link to="/users">
+                <Button
+                  variant={location.pathname === '/users' ? 'default' : 'outline'}
+                  className="w-full"
+                  size="sm"
+                >
+                  <Users className="h-4 w-4 mr-2" />
+                  Gestión de Usuarios
+                </Button>
+              </Link>
+            )}
           </div>
 
           <div className="flex-1 overflow-y-auto space-y-2">

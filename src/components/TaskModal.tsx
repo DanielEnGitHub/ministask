@@ -4,12 +4,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog'
 import { Input } from './ui/input'
 import { Textarea } from './ui/textarea'
 import { Button } from './ui/button'
-import { Select } from './ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'
 import { Badge } from './ui/badge'
 import type { Task, TaskStatus, TaskLabel, SubTask, Project } from '@/lib/types'
 import { STATUS_CONFIG, LABEL_CONFIG } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { toDateInputValue } from '@/lib/dateUtils'
+import { usePermissions } from '@/hooks/usePermissions'
 
 interface TaskModalProps {
   open: boolean
@@ -21,6 +22,7 @@ interface TaskModalProps {
 }
 
 export function TaskModal({ open, onClose, onSave, task, projects = [], currentProjectId }: TaskModalProps) {
+  const permissions = usePermissions()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [status, setStatus] = useState<TaskStatus>('created')
@@ -166,39 +168,55 @@ export function TaskModal({ open, onClose, onSave, task, projects = [], currentP
             />
           </div>
 
-          {/* Estado */}
-          <div>
-            <label className="block text-sm font-medium mb-1.5">Estado</label>
-            <Select
-              value={status}
-              onChange={(e) => setStatus(e.target.value as TaskStatus)}
-            >
-              {Object.entries(STATUS_CONFIG).map(([key, config]) => (
-                <option key={key} value={key}>
-                  {config.label}
-                </option>
-              ))}
-            </Select>
-            <div className="mt-2">
-              <Badge className={cn(STATUS_CONFIG[status].bgColor, STATUS_CONFIG[status].color, 'border-0')}>
-                {STATUS_CONFIG[status].label}
-              </Badge>
+          {/* Estado - Solo admins pueden cambiar el estado */}
+          {permissions.canChangeTaskStatus ? (
+            <div>
+              <label className="block text-sm font-medium mb-1.5">Estado</label>
+              <Select value={status} onValueChange={(value) => setStatus(value as TaskStatus)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecciona un estado" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(STATUS_CONFIG).map(([key, config]) => (
+                    <SelectItem key={key} value={key}>
+                      {config.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <div className="mt-2">
+                <Badge className={cn(STATUS_CONFIG[status].bgColor, STATUS_CONFIG[status].color, 'border-0')}>
+                  {STATUS_CONFIG[status].label}
+                </Badge>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div>
+              <label className="block text-sm font-medium mb-1.5">Estado</label>
+              <div className="p-2 bg-gray-50 rounded-lg">
+                <Badge className={cn(STATUS_CONFIG['created'].bgColor, STATUS_CONFIG['created'].color, 'border-0')}>
+                  {STATUS_CONFIG['created'].label}
+                </Badge>
+                <p className="text-xs text-gray-500 mt-1">Las tareas se crean con estado "Creado"</p>
+              </div>
+            </div>
+          )}
 
           {/* Etiqueta */}
           <div>
             <label className="block text-sm font-medium mb-1.5">Etiqueta</label>
-            <Select
-              value={label}
-              onChange={(e) => setLabel(e.target.value as TaskLabel | '')}
-            >
-              <option value="">Sin etiqueta</option>
-              {Object.entries(LABEL_CONFIG).map(([key, config]) => (
-                <option key={key} value={key}>
-                  {config.icon} {config.label}
-                </option>
-              ))}
+            <Select value={label || 'none'} onValueChange={(value) => setLabel(value === 'none' ? '' : value as TaskLabel)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Sin etiqueta" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Sin etiqueta</SelectItem>
+                {Object.entries(LABEL_CONFIG).map(([key, config]) => (
+                  <SelectItem key={key} value={key}>
+                    {config.icon} {config.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
             </Select>
             {label && (
               <div className="mt-2">
@@ -220,18 +238,21 @@ export function TaskModal({ open, onClose, onSave, task, projects = [], currentP
               </p>
             ) : (
               <>
-                <Select
-                  value={projectId}
-                  onChange={(e) => setProjectId(e.target.value)}
-                  required
-                >
-                  <option value="">Selecciona un proyecto</option>
-                  {projects.map((project) => (
-                    <option key={project.id} value={project.id}>
-                      {project.name}
-                    </option>
-                  ))}
+                <Select value={projectId || undefined} onValueChange={(value) => setProjectId(value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona un proyecto" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {projects.map((project) => (
+                      <SelectItem key={project.id} value={project.id}>
+                        {project.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
                 </Select>
+                {!projectId && (
+                  <p className="text-xs text-red-600 mt-1">Debes seleccionar un proyecto</p>
+                )}
               </>
             )}
           </div>

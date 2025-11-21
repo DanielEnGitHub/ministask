@@ -2,14 +2,15 @@
  * =====================================================
  * APP - ROUTER PRINCIPAL
  * =====================================================
- * Maneja la autenticación y muestra Login o Dashboard
- * según el estado del usuario
+ * Maneja la autenticación y rutas de la aplicación
  * =====================================================
  */
 
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './contexts/AuthContext'
 import { Login } from './pages/Login'
 import { Dashboard } from './pages/Dashboard'
+import { Users } from './pages/Users'
 import { Loader2 } from 'lucide-react'
 
 function App() {
@@ -32,8 +33,16 @@ function App() {
     return <Login />
   }
 
-  // Si hay usuario, mostrar Dashboard
-  return <Dashboard />
+  // Si hay usuario, mostrar aplicación con rutas
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/users" element={<Users />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
+  )
 }
 
 export default App
