@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import { useConfirm } from '@/hooks/useConfirm'
 import { usePermissions } from '@/hooks/usePermissions'
+import { getTaskStartDate, getTaskEndDate } from '@/lib/taskUtils'
 
 interface KanbanViewProps {
   tasks: Task[]
@@ -184,8 +185,8 @@ export function KanbanView({
                                   )}
 
                                   {(() => {
-                                    const startDate = (task as any).start_date || (task as any).startDate
-                                    const endDate = (task as any).end_date || (task as any).endDate
+                                    const startDate = getTaskStartDate(task)
+                                    const endDate = getTaskEndDate(task)
                                     return (startDate || endDate) && (
                                       <div className="flex items-center gap-1 text-xs text-gray-500">
                                         <Calendar className="h-3 w-3" />

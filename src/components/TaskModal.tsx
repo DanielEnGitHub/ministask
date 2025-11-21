@@ -9,8 +9,8 @@ import { Badge } from './ui/badge'
 import type { Task, TaskStatus, TaskLabel, SubTask, Project } from '@/lib/types'
 import { STATUS_CONFIG, LABEL_CONFIG } from '@/lib/types'
 import { cn } from '@/lib/utils'
-import { toDateInputValue } from '@/lib/dateUtils'
 import { usePermissions } from '@/hooks/usePermissions'
+import { getTaskStartDate, getTaskEndDate, getTaskProjectId, getDateInputValue } from '@/lib/taskUtils'
 
 interface TaskModalProps {
   open: boolean
@@ -36,25 +36,19 @@ export function TaskModal({ open, onClose, onSave, task, projects = [], currentP
 
   useEffect(() => {
     if (task) {
-      // Manejar tanto camelCase como snake_case (Supabase usa snake_case)
-      const taskStartDate = (task as any).start_date || (task as any).startDate
-      const taskEndDate = (task as any).end_date || (task as any).endDate
-      const taskProjectId = (task as any).project_id || (task as any).projectId
-
       setTitle(task.title || '')
       setDescription(task.description || '')
-      // Mostrar el estado actual de la tarea (los permisos controlan si se puede editar)
       setStatus(task.status || 'created')
       setLabel(task.label || '')
       setSubtasks(task.subtasks || [])
-      setStartDate(taskStartDate ? toDateInputValue(taskStartDate) : '')
-      setEndDate(taskEndDate ? toDateInputValue(taskEndDate) : '')
-      setProjectId(taskProjectId || currentProjectId || '')
+      setStartDate(getDateInputValue(getTaskStartDate(task)))
+      setEndDate(getDateInputValue(getTaskEndDate(task)))
+      setProjectId(getTaskProjectId(task) || currentProjectId || '')
       setImages(task.images || [])
     } else {
       resetForm()
     }
-  }, [task, open, currentProjectId, permissions.canChangeTaskStatus])
+  }, [task, open, currentProjectId])
 
   const resetForm = () => {
     setTitle('')

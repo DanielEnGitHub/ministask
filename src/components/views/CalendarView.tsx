@@ -18,6 +18,7 @@ import {
 import { es } from 'date-fns/locale'
 import { useConfirm } from '@/hooks/useConfirm'
 import { normalizeDate, isDateInRange } from '@/lib/dateUtils'
+import { getTaskStartDate, getTaskEndDate, hasTaskDates } from '@/lib/taskUtils'
 
 interface CalendarViewProps {
   tasks: Task[]
@@ -37,24 +38,15 @@ export function CalendarView({
   const monthEnd = endOfMonth(currentMonth)
   const days = eachDayOfInterval({ start: monthStart, end: monthEnd })
 
-  // Helper functions to handle both camelCase and snake_case
-  const getStartDate = (task: Task): Date | string | null => {
-    return (task as any).start_date || (task as any).startDate || null
-  }
-
-  const getEndDate = (task: Task): Date | string | null => {
-    return (task as any).end_date || (task as any).endDate || null
-  }
-
   const tasksWithDates = useMemo(() => {
-    return tasks.filter((task) => getStartDate(task) || getEndDate(task))
+    return tasks.filter((task) => hasTaskDates(task))
   }, [tasks])
 
   const getTasksForDay = (day: Date) => {
     return tasksWithDates.filter((task) => {
       const dayNormalized = normalizeDate(day)
-      const startDate = getStartDate(task)
-      const endDate = getEndDate(task)
+      const startDate = getTaskStartDate(task)
+      const endDate = getTaskEndDate(task)
 
       if (startDate && endDate) {
         return isDateInRange(dayNormalized, startDate, endDate)
@@ -245,7 +237,7 @@ export function CalendarView({
             </h3>
             <div className="space-y-2">
               {tasks
-                .filter((task) => !getStartDate(task) && !getEndDate(task))
+                .filter((task) => !hasTaskDates(task))
                 .slice(0, 5)
                 .map((task) => (
                   <div

@@ -12,6 +12,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { usePermissions } from '@/hooks/usePermissions'
 import * as ProjectsService from '@/services/projects.service'
 import * as TasksService from '@/services/tasks.service'
+import { getTaskProjectId } from '@/lib/taskUtils'
 
 export function Dashboard() {
   const { theme, toggleTheme } = useTheme()
@@ -109,6 +110,8 @@ export function Dashboard() {
         ? ((taskData as any).endDate instanceof Date ? (taskData as any).endDate : new Date((taskData as any).endDate))
         : undefined
 
+      const projectId = getTaskProjectId(taskData)
+
       if (taskData.id) {
         // Actualizar tarea existente
         const { data } = await TasksService.updateTask(taskData.id, {
@@ -116,14 +119,13 @@ export function Dashboard() {
           description: taskData.description,
           status: taskData.status,
           label: taskData.label,
-          projectId: (taskData as any).projectId || taskData.project_id,
+          projectId,
           startDate,
           endDate,
           subtasks: taskData.subtasks,
         })
 
         if (data) {
-          // Actualizar en el estado local
           setTasks(prev => prev.map(t => t.id === data.id ? data : t))
         }
       } else {
@@ -133,14 +135,13 @@ export function Dashboard() {
           description: taskData.description,
           status: taskData.status,
           label: taskData.label,
-          projectId: (taskData as any).projectId || taskData.project_id,
+          projectId,
           startDate,
           endDate,
           subtasks: taskData.subtasks,
         }, user.id)
 
         if (data) {
-          // Agregar al estado local
           setTasks(prev => [data, ...prev])
         }
       }
