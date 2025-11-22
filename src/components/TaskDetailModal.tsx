@@ -1,4 +1,3 @@
-import { useLiveQuery } from 'dexie-react-hooks'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
@@ -6,8 +5,8 @@ import { cn } from '@/lib/utils'
 import type { Task, Project } from '@/lib/types'
 import { STATUS_CONFIG } from '@/lib/types'
 import { Calendar, Folder, Edit2, CheckSquare, Square } from 'lucide-react'
-import { db } from '@/lib/db'
 import { formatDateForDisplay } from '@/lib/dateUtils'
+import { getTaskProjectId, getTaskStartDate, getTaskEndDate } from '@/lib/taskUtils'
 
 interface TaskDetailModalProps {
   open: boolean
@@ -24,28 +23,23 @@ export function TaskDetailModal({
   projects = [],
   onEdit
 }: TaskDetailModalProps) {
-  // Usar useLiveQuery para obtener la tarea actualizada en tiempo real
-  const liveTask = useLiveQuery(
-    () => task ? db.tasks.get(task.id) : undefined,
-    [task?.id]
-  )
+  if (!task) return null
 
-  // Usar la tarea en vivo si está disponible, si no usar la prop
-  const currentTask = liveTask || task
-
-  if (!currentTask) return null
-
-  const project = projects.find(p => p.id === currentTask.projectId)
+  // Obtener datos de la tarea manejando tanto camelCase como snake_case
+  const projectId = getTaskProjectId(task)
+  const project = projects.find(p => p.id === projectId)
+  const startDate = getTaskStartDate(task)
+  const endDate = getTaskEndDate(task)
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center justify-between">
-            <DialogTitle className="text-2xl">{currentTask.title}</DialogTitle>
+            <DialogTitle className="text-2xl">{task.title}</DialogTitle>
             <Button
               onClick={() => {
-                onEdit(currentTask)
+                onEdit(task)
                 onClose()
               }}
               variant="outline"
@@ -65,22 +59,22 @@ export function TaskDetailModal({
             </label>
             <Badge
               className={cn(
-                STATUS_CONFIG[currentTask.status].bgColor,
-                STATUS_CONFIG[currentTask.status].color,
+                STATUS_CONFIG[task.status].bgColor,
+                STATUS_CONFIG[task.status].color,
                 'border-0 text-sm px-3 py-1'
               )}
             >
-              {STATUS_CONFIG[currentTask.status].label}
+              {STATUS_CONFIG[task.status].label}
             </Badge>
           </div>
 
           {/* Descripción */}
-          {currentTask.description && (
+          {task.description && (
             <div>
               <label className="block text-sm font-medium text-gray-500 mb-2">
                 Descripción
               </label>
-              <p className="text-gray-700 whitespace-pre-wrap">{currentTask.description}</p>
+              <p className="text-gray-700 whitespace-pre-wrap">{task.description}</p>
             </div>
           )}
 
@@ -98,9 +92,9 @@ export function TaskDetailModal({
           )}
 
           {/* Fechas */}
-          {(currentTask.startDate || currentTask.endDate) && (
+          {(startDate || endDate) && (
             <div className="grid grid-cols-2 gap-4">
-              {currentTask.startDate && (
+              {startDate && (
                 <div>
                   <label className="block text-sm font-medium text-gray-500 mb-2">
                     Fecha Inicio
@@ -108,13 +102,13 @@ export function TaskDetailModal({
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-gray-400" />
                     <span className="text-gray-700">
-                      {formatDateForDisplay(currentTask.startDate)}
+                      {formatDateForDisplay(startDate)}
                     </span>
                   </div>
                 </div>
               )}
 
-              {currentTask.endDate && (
+              {endDate && (
                 <div>
                   <label className="block text-sm font-medium text-gray-500 mb-2">
                     Fecha Fin
@@ -122,7 +116,7 @@ export function TaskDetailModal({
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-gray-400" />
                     <span className="text-gray-700">
-                      {formatDateForDisplay(currentTask.endDate)}
+                      {formatDateForDisplay(endDate)}
                     </span>
                   </div>
                 </div>
@@ -131,13 +125,13 @@ export function TaskDetailModal({
           )}
 
           {/* Subtareas */}
-          {currentTask.subtasks.length > 0 && (
+          {task.subtasks && task.subtasks.length > 0 && (
             <div>
               <label className="block text-sm font-medium text-gray-500 mb-2">
-                Subtareas ({currentTask.subtasks.filter(st => st.completed).length}/{currentTask.subtasks.length})
+                Subtareas ({task.subtasks.filter(st => st.completed).length}/{task.subtasks.length})
               </label>
               <div className="space-y-2">
-                {currentTask.subtasks.map((subtask) => (
+                {task.subtasks.map((subtask) => (
                   <div
                     key={subtask.id}
                     className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50"
@@ -162,20 +156,6 @@ export function TaskDetailModal({
               </div>
             </div>
           )}
-
-          {/* Información de creación */}
-          <div className="border-t pt-4">
-            <div className="grid grid-cols-2 gap-4 text-xs text-gray-500">
-              <div>
-                <span className="font-medium">Creado:</span>{' '}
-                {new Date(currentTask.createdAt).toLocaleString()}
-              </div>
-              <div>
-                <span className="font-medium">Actualizado:</span>{' '}
-                {new Date(currentTask.updatedAt).toLocaleString()}
-              </div>
-            </div>
-          </div>
         </div>
       </DialogContent>
     </Dialog>

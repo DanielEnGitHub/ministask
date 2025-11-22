@@ -10,7 +10,7 @@ import type { Task, TaskStatus, TaskLabel, SubTask, Project } from '@/lib/types'
 import { STATUS_CONFIG, LABEL_CONFIG } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { usePermissions } from '@/hooks/usePermissions'
-import { getTaskStartDate, getTaskEndDate, getTaskProjectId, getDateInputValue } from '@/lib/taskUtils'
+import { getTaskStartDate, getTaskEndDate, getTaskProjectId, getTaskLabel, getDateInputValue } from '@/lib/taskUtils'
 
 interface TaskModalProps {
   open: boolean
@@ -33,9 +33,14 @@ export function TaskModal({ open, onClose, onSave, task, projects = [], currentP
   const [endDate, setEndDate] = useState('')
   const [projectId, setProjectId] = useState<string>('')
   const [images, setImages] = useState<string[]>([])
+  const [isDataLoaded, setIsDataLoaded] = useState(false)
 
   useEffect(() => {
-    if (task) {
+    if (open && task) {
+      // Marcar como no cargado al inicio
+      setIsDataLoaded(false)
+
+      // Cuando se abre el modal con una tarea, cargar todos los datos
       setTitle(task.title || '')
       setDescription(task.description || '')
       setStatus(task.status || 'created')
@@ -43,9 +48,29 @@ export function TaskModal({ open, onClose, onSave, task, projects = [], currentP
       setSubtasks(task.subtasks || [])
       setStartDate(getDateInputValue(getTaskStartDate(task)))
       setEndDate(getDateInputValue(getTaskEndDate(task)))
-      setProjectId(getTaskProjectId(task) || currentProjectId || '')
+
+      // Obtener el projectId de la tarea (prioriza project_id de Supabase)
+      const taskProjectId = task.project_id || task.projectId
+      if (taskProjectId && typeof taskProjectId === 'string' && taskProjectId.trim() !== '') {
+        setProjectId(taskProjectId)
+      } else if (currentProjectId && typeof currentProjectId === 'string' && currentProjectId.trim() !== '') {
+        setProjectId(currentProjectId)
+      } else {
+        setProjectId('')
+      }
+
       setImages(task.images || [])
-    } else {
+
+      // Marcar como cargado después de establecer todos los valores
+      // Usar setTimeout para asegurar que los estados se hayan actualizado
+      setTimeout(() => setIsDataLoaded(true), 0)
+    } else if (open && !task) {
+      // Cuando se abre el modal sin tarea (nueva tarea)
+      resetForm()
+      setIsDataLoaded(true)
+    } else if (!open) {
+      // Cuando se cierra el modal, resetear el formulario
+      setIsDataLoaded(false)
       resetForm()
     }
   }, [task, open, currentProjectId])
@@ -114,6 +139,12 @@ export function TaskModal({ open, onClose, onSave, task, projects = [], currentP
       return
     }
 
+    // Función auxiliar para crear una fecha en UTC medianoche
+    const createUTCDate = (dateString: string): Date => {
+      const [year, month, day] = dateString.split('-').map(Number)
+      return new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0))
+    }
+
     const taskData: Partial<Task> = {
       ...(task?.id && { id: task.id }),
       title: title.trim(),
@@ -121,8 +152,8 @@ export function TaskModal({ open, onClose, onSave, task, projects = [], currentP
       status,
       label: label || undefined,
       subtasks,
-      startDate: startDate ? new Date(startDate + 'T00:00:00') : undefined,
-      endDate: endDate ? new Date(endDate + 'T00:00:00') : undefined,
+      startDate: startDate ? createUTCDate(startDate) : undefined,
+      endDate: endDate ? createUTCDate(endDate) : undefined,
       projectId: projectId || null,
       images: images.length > 0 ? images : undefined,
       updatedAt: new Date(),
@@ -141,6 +172,11 @@ export function TaskModal({ open, onClose, onSave, task, projects = [], currentP
           <DialogTitle>{task ? 'Editar Tarea' : 'Nueva Tarea'}</DialogTitle>
         </DialogHeader>
 
+        {!isDataLoaded ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          </div>
+        ) : (
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           {/* Título */}
           <div>
@@ -207,7 +243,7 @@ export function TaskModal({ open, onClose, onSave, task, projects = [], currentP
           {/* Etiqueta */}
           <div>
             <label className="block text-sm font-medium mb-1.5">Etiqueta</label>
-            <Select value={label || 'none'} onValueChange={(value) => setLabel(value === 'none' ? '' : value as TaskLabel)}>
+            <Select key={`label-${task?.id || 'new'}`} value={label || 'none'} onValueChange={(value) => setLabel(value === 'none' ? '' : value as TaskLabel)}>
               <SelectTrigger>
                 <SelectValue placeholder="Sin etiqueta" />
               </SelectTrigger>
@@ -240,7 +276,7 @@ export function TaskModal({ open, onClose, onSave, task, projects = [], currentP
               </p>
             ) : (
               <>
-                <Select value={projectId || undefined} onValueChange={(value) => setProjectId(value)}>
+                <Select key={`project-${task?.id || 'new'}`} value={projectId} onValueChange={(value) => setProjectId(value)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecciona un proyecto" />
                   </SelectTrigger>
@@ -397,6 +433,7 @@ export function TaskModal({ open, onClose, onSave, task, projects = [], currentP
             </Button>
           </div>
         </form>
+        )}
       </DialogContent>
     </Dialog>
   )

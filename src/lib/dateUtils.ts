@@ -43,8 +43,23 @@ export function formatDateForDisplay(date: Date | string | null | undefined): st
  * Útil para comparaciones de fechas
  */
 export function normalizeDate(date: Date | string): Date {
-  const d = new Date(date)
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate())
+  // Si es un string, intentamos parsearlo correctamente
+  if (typeof date === 'string') {
+    // Si es formato YYYY-MM-DD, lo parseamos directamente sin conversión UTC
+    if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      const [year, month, day] = date.split('-').map(Number)
+      return new Date(year, month - 1, day)
+    }
+    // Si es un string ISO completo, lo convertimos a Date y extraemos los componentes
+    const d = new Date(date)
+    // Extraer los componentes usando UTC para evitar desfase de timezone
+    return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())
+  }
+
+  // Si ya es un objeto Date
+  const d = date
+  // Usar UTC para evitar desfase por timezone
+  return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())
 }
 
 /**
