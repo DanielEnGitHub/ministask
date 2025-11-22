@@ -41,11 +41,19 @@ export function KanbanView({
   }, {} as Record<TaskStatus, Task[]>)
 
   const handleDragEnd = (result: DropResult) => {
-    const { destination, draggableId } = result
+    const { destination, draggableId, source } = result
 
     if (!destination) return
 
     const newStatus = destination.droppableId as TaskStatus
+    const currentStatus = source.droppableId as TaskStatus
+
+    // Verificar si el usuario tiene permiso para cambiar de este estado al nuevo
+    if (!permissions.canChangeTaskStatusTo(currentStatus, newStatus)) {
+      alert('No tienes permiso para cambiar esta tarea a ese estado')
+      return
+    }
+
     onUpdateTaskStatus(draggableId, newStatus)
   }
 

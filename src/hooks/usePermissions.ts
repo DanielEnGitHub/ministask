@@ -94,10 +94,27 @@ export function usePermissions() {
 
     /**
      * Puede cambiar estado de tareas
-     * Solo admin
-     * Client NO puede cambiar estados
+     * Admin: Puede cambiar cualquier estado
+     * Client: Solo puede cambiar de "En Revisión" (paused) a "Finalizado" (completed)
      */
     canChangeTaskStatus: isAdmin,
+
+    /**
+     * Verifica si puede cambiar de un estado a otro
+     * @param currentStatus - Estado actual de la tarea
+     * @param newStatus - Nuevo estado deseado
+     */
+    canChangeTaskStatusTo: (currentStatus: string, newStatus: string) => {
+      // Admin puede cambiar cualquier estado
+      if (isAdmin) return true
+
+      // Cliente solo puede cambiar de "paused" (En Revisión) a "completed" (Finalizado)
+      if (isClient) {
+        return currentStatus === 'paused' && newStatus === 'completed'
+      }
+
+      return false
+    },
 
     /**
      * Puede ver todas las tareas

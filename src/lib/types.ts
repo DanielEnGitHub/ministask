@@ -50,7 +50,7 @@ export const STATUS_CONFIG: Record<TaskStatus, { label: string; color: string; b
     bgColor: 'bg-blue-100'
   },
   paused: {
-    label: 'Pausado',
+    label: 'En Revisión',
     color: 'text-yellow-700',
     bgColor: 'bg-yellow-100'
   },

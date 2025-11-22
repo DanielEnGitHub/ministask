@@ -13,18 +13,31 @@ import * as ProjectsService from '@/services/projects.service'
 import * as TasksService from '@/services/tasks.service'
 import { getTaskProjectId } from '@/lib/taskUtils'
 
+// Keys para localStorage
+const STORAGE_KEYS = {
+  CURRENT_VIEW: 'minitasks_current_view',
+  SELECTED_PROJECT: 'minitasks_selected_project',
+}
+
 export function Dashboard() {
   const { theme, toggleTheme } = useTheme()
   const { user, profile, isAdmin } = useAuth()
 
-  const [currentView, setCurrentView] = useState<ViewType>('list')
+  // Cargar vista y proyecto desde localStorage
+  const [currentView, setCurrentView] = useState<ViewType>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.CURRENT_VIEW)
+    return (saved as ViewType) || 'list'
+  })
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false)
   const [isTaskDetailModalOpen, setIsTaskDetailModalOpen] = useState(false)
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [viewingTask, setViewingTask] = useState<Task | null>(null)
   const [editingProject, setEditingProject] = useState<Project | null>(null)
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.SELECTED_PROJECT)
+    return saved || null
+  })
 
   // Estado para datos desde Supabase
   const [tasks, setTasks] = useState<Task[]>([])
@@ -37,6 +50,20 @@ export function Dashboard() {
 
     loadData()
   }, [user, profile])
+
+  // Guardar vista seleccionada en localStorage
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.CURRENT_VIEW, currentView)
+  }, [currentView])
+
+  // Guardar proyecto seleccionado en localStorage
+  useEffect(() => {
+    if (selectedProjectId) {
+      localStorage.setItem(STORAGE_KEYS.SELECTED_PROJECT, selectedProjectId)
+    } else {
+      localStorage.removeItem(STORAGE_KEYS.SELECTED_PROJECT)
+    }
+  }, [selectedProjectId])
 
   const loadData = async () => {
     if (!user || !profile) return
