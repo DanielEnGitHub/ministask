@@ -6,8 +6,8 @@ import { Textarea } from './ui/textarea'
 import { Button } from './ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'
 import { Badge } from './ui/badge'
-import type { Task, TaskStatus, TaskLabel, SubTask, Project } from '@/lib/types'
-import { STATUS_CONFIG, LABEL_CONFIG } from '@/lib/types'
+import type { Task, TaskStatus, TaskLabel, TaskPriority, SubTask, Project } from '@/lib/types'
+import { STATUS_CONFIG, LABEL_CONFIG, PRIORITY_CONFIG } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { usePermissions } from '@/hooks/usePermissions'
 import { getTaskStartDate, getTaskEndDate, getTaskProjectId, getTaskLabel, getDateInputValue } from '@/lib/taskUtils'
@@ -27,6 +27,7 @@ export function TaskModal({ open, onClose, onSave, task, projects = [], currentP
   const [description, setDescription] = useState('')
   const [status, setStatus] = useState<TaskStatus>('created')
   const [label, setLabel] = useState<TaskLabel | ''>('')
+  const [priority, setPriority] = useState<TaskPriority | ''>('')
   const [subtasks, setSubtasks] = useState<SubTask[]>([])
   const [newSubtask, setNewSubtask] = useState('')
   const [startDate, setStartDate] = useState('')
@@ -45,6 +46,7 @@ export function TaskModal({ open, onClose, onSave, task, projects = [], currentP
       setDescription(task.description || '')
       setStatus(task.status || 'created')
       setLabel(task.label || '')
+      setPriority(task.priority || '')
       setSubtasks(task.subtasks || [])
       setStartDate(getDateInputValue(getTaskStartDate(task)))
       setEndDate(getDateInputValue(getTaskEndDate(task)))
@@ -80,6 +82,7 @@ export function TaskModal({ open, onClose, onSave, task, projects = [], currentP
     setDescription('')
     setStatus('created')
     setLabel('')
+    setPriority('')
     setSubtasks([])
     setNewSubtask('')
     setStartDate('')
@@ -151,6 +154,7 @@ export function TaskModal({ open, onClose, onSave, task, projects = [], currentP
       description: description.trim() || undefined,
       status,
       label: label || undefined,
+      priority: priority || undefined,
       subtasks,
       startDate: startDate ? createUTCDate(startDate) : undefined,
       endDate: endDate ? createUTCDate(endDate) : undefined,
@@ -260,6 +264,31 @@ export function TaskModal({ open, onClose, onSave, task, projects = [], currentP
               <div className="mt-2">
                 <Badge className={cn(LABEL_CONFIG[label as TaskLabel].bgColor, LABEL_CONFIG[label as TaskLabel].color, 'border-0')}>
                   {LABEL_CONFIG[label as TaskLabel].icon} {LABEL_CONFIG[label as TaskLabel].label}
+                </Badge>
+              </div>
+            )}
+          </div>
+
+          {/* Prioridad */}
+          <div>
+            <label className="block text-sm font-medium mb-1.5">Prioridad</label>
+            <Select key={`priority-${task?.id || 'new'}`} value={priority || 'none'} onValueChange={(value) => setPriority(value === 'none' ? '' : value as TaskPriority)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Sin prioridad" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Sin prioridad</SelectItem>
+                {Object.entries(PRIORITY_CONFIG).map(([key, config]) => (
+                  <SelectItem key={key} value={key}>
+                    {config.icon} {config.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {priority && PRIORITY_CONFIG[priority as TaskPriority] && (
+              <div className="mt-2">
+                <Badge className={cn(PRIORITY_CONFIG[priority as TaskPriority].bgColor, PRIORITY_CONFIG[priority as TaskPriority].color, 'border-0')}>
+                  {PRIORITY_CONFIG[priority as TaskPriority].icon} {PRIORITY_CONFIG[priority as TaskPriority].label}
                 </Badge>
               </div>
             )}

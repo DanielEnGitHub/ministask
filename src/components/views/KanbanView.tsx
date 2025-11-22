@@ -4,7 +4,7 @@ import { Button } from '../ui/button'
 import { Card, CardContent } from '../ui/card'
 import { Badge } from '../ui/badge'
 import type { Task, TaskStatus } from '@/lib/types'
-import { STATUS_CONFIG, LABEL_CONFIG } from '@/lib/types'
+import { STATUS_CONFIG, LABEL_CONFIG, PRIORITY_CONFIG } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import { useConfirm } from '@/hooks/useConfirm'
@@ -125,17 +125,30 @@ export function KanbanView({
                                     <h4 className="font-medium text-gray-900">
                                       {task.title}
                                     </h4>
-                                    {task.label && (
-                                      <Badge
-                                        className={cn(
-                                          LABEL_CONFIG[task.label].bgColor,
-                                          LABEL_CONFIG[task.label].color,
-                                          'border-0 text-xs'
-                                        )}
-                                      >
-                                        {LABEL_CONFIG[task.label].icon} {LABEL_CONFIG[task.label].label}
-                                      </Badge>
-                                    )}
+                                    <div className="flex gap-2 flex-wrap">
+                                      {task.label && (
+                                        <Badge
+                                          className={cn(
+                                            LABEL_CONFIG[task.label].bgColor,
+                                            LABEL_CONFIG[task.label].color,
+                                            'border-0 text-xs'
+                                          )}
+                                        >
+                                          {LABEL_CONFIG[task.label].icon} {LABEL_CONFIG[task.label].label}
+                                        </Badge>
+                                      )}
+                                      {task.priority && (
+                                        <Badge
+                                          className={cn(
+                                            PRIORITY_CONFIG[task.priority].bgColor,
+                                            PRIORITY_CONFIG[task.priority].color,
+                                            'border-0 text-xs'
+                                          )}
+                                        >
+                                          {PRIORITY_CONFIG[task.priority].icon} {PRIORITY_CONFIG[task.priority].label}
+                                        </Badge>
+                                      )}
+                                    </div>
                                   </div>
                                   <div className="flex gap-1">
                                     <Button

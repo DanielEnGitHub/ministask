@@ -2,6 +2,8 @@ export type TaskStatus = 'created' | 'in_progress' | 'paused' | 'cancelled' | 'c
 
 export type TaskLabel = 'bug' | 'implementacion' | 'mejora' | 'actualizacion' | 'otro';
 
+export type TaskPriority = 'alta' | 'media' | 'baja';
+
 export interface SubTask {
   id: string;
   text: string;
@@ -15,17 +17,26 @@ export interface Comment {
   createdAt: Date;
 }
 
+export interface TaskView {
+  id: string;
+  userId: string;
+  userName: string;
+  viewedAt: Date;
+}
+
 export interface Task {
   id: string;
   title: string;
   description?: string;
   status: TaskStatus;
   label?: TaskLabel; // Etiqueta de la tarea
+  priority?: TaskPriority; // Prioridad de la tarea
   subtasks: SubTask[];
   startDate?: Date;
   endDate?: Date;
   projectId?: string | null;
   images?: string[]; // URLs o base64 de imágenes adjuntas
+  taskViews?: TaskView[]; // Historial de vistas (solo para admins)
   createdAt: Date;
   updatedAt: Date;
 }
@@ -96,5 +107,26 @@ export const LABEL_CONFIG: Record<TaskLabel, { label: string; color: string; bgC
     color: 'text-gray-700',
     bgColor: 'bg-gray-100',
     icon: '📌'
+  }
+};
+
+export const PRIORITY_CONFIG: Record<TaskPriority, { label: string; color: string; bgColor: string; icon: string }> = {
+  alta: {
+    label: 'Alta',
+    color: 'text-red-700',
+    bgColor: 'bg-red-100',
+    icon: '🔴'
+  },
+  media: {
+    label: 'Media',
+    color: 'text-yellow-700',
+    bgColor: 'bg-yellow-100',
+    icon: '🟡'
+  },
+  baja: {
+    label: 'Baja',
+    color: 'text-green-700',
+    bgColor: 'bg-green-100',
+    icon: '🟢'
   }
 };

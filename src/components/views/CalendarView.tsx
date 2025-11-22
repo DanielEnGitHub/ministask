@@ -4,7 +4,7 @@ import { Button } from '../ui/button'
 import { Card, CardContent } from '../ui/card'
 import { Badge } from '../ui/badge'
 import type { Task } from '@/lib/types'
-import { STATUS_CONFIG, LABEL_CONFIG } from '@/lib/types'
+import { STATUS_CONFIG, LABEL_CONFIG, PRIORITY_CONFIG } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import {
   format,
@@ -179,6 +179,9 @@ export function CalendarView({
                         {task.label && (
                           <span className="text-xs">{LABEL_CONFIG[task.label].icon}</span>
                         )}
+                        {task.priority && (
+                          <span className="text-xs">{PRIORITY_CONFIG[task.priority].icon}</span>
+                        )}
                         <div className="truncate font-medium flex-1">{task.title}</div>
                       </div>
 
@@ -263,6 +266,17 @@ export function CalendarView({
                           )}
                         >
                           {LABEL_CONFIG[task.label].icon} {LABEL_CONFIG[task.label].label}
+                        </Badge>
+                      )}
+                      {task.priority && (
+                        <Badge
+                          className={cn(
+                            PRIORITY_CONFIG[task.priority].bgColor,
+                            PRIORITY_CONFIG[task.priority].color,
+                            'border-0 text-xs'
+                          )}
+                        >
+                          {PRIORITY_CONFIG[task.priority].icon} {PRIORITY_CONFIG[task.priority].label}
                         </Badge>
                       )}
                       <span className="text-sm">{task.title}</span>

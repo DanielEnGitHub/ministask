@@ -5,7 +5,7 @@ import { Button } from '../ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Badge } from '../ui/badge'
 import type { Task } from '@/lib/types'
-import { STATUS_CONFIG, LABEL_CONFIG } from '@/lib/types'
+import { STATUS_CONFIG, LABEL_CONFIG, PRIORITY_CONFIG } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import { useConfirm } from '@/hooks/useConfirm'
@@ -94,6 +94,17 @@ export function ListView({ tasks, onEditTask, onDeleteTask }: ListViewProps) {
                           )}
                         >
                           {LABEL_CONFIG[task.label].icon} {LABEL_CONFIG[task.label].label}
+                        </Badge>
+                      )}
+                      {task.priority && (
+                        <Badge
+                          className={cn(
+                            PRIORITY_CONFIG[task.priority].bgColor,
+                            PRIORITY_CONFIG[task.priority].color,
+                            'border-0'
+                          )}
+                        >
+                          {PRIORITY_CONFIG[task.priority].icon} {PRIORITY_CONFIG[task.priority].label}
                         </Badge>
                       )}
                     </div>

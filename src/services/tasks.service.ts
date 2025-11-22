@@ -7,7 +7,7 @@
  */
 
 import { supabase } from '@/lib/supabase'
-import type { TaskStatus, TaskLabel } from '@/lib/types'
+import type { TaskStatus, TaskLabel, TaskPriority } from '@/lib/types'
 
 export interface Task {
   id: string
@@ -15,10 +15,12 @@ export interface Task {
   description: string | null
   status: TaskStatus
   label: TaskLabel | null
+  priority: TaskPriority | null
   project_id: string | null
   start_date: string | null
   end_date: string | null
   subtasks: any[] | null
+  task_views: any[] | null
   created_at: string
   updated_at: string
   created_by: string
@@ -29,6 +31,7 @@ export interface CreateTaskInput {
   description?: string
   status?: TaskStatus
   label?: TaskLabel
+  priority?: TaskPriority
   projectId?: string
   startDate?: Date
   endDate?: Date
@@ -40,6 +43,7 @@ export interface UpdateTaskInput {
   description?: string
   status?: TaskStatus
   label?: TaskLabel
+  priority?: TaskPriority
   projectId?: string
   startDate?: Date
   endDate?: Date
@@ -120,10 +124,12 @@ export async function createTask(input: CreateTaskInput, userId: string) {
       description: input.description || null,
       status: input.status || 'created',
       label: input.label || null,
+      priority: input.priority || null,
       project_id: input.projectId || null,
       start_date: input.startDate ? input.startDate.toISOString() : null,
       end_date: input.endDate ? input.endDate.toISOString() : null,
       subtasks: input.subtasks || null,
+      task_views: null,
       created_by: userId,
     }
 
@@ -261,6 +267,35 @@ export async function getTasksBySprint(sprintId: string) {
     return { data, error: null }
   } catch (error) {
     console.error('[getTasksBySprint] Error:', error)
+    return { data: null, error }
+  }
+}
+
+/**
+ * Registrar una vista de tarea
+ * Solo se registra si el usuario NO es admin
+ * Usa RPC para evitar problemas con RLS
+ */
+export async function recordTaskView(taskId: string, userId: string, userName: string) {
+  try {
+    console.log('[recordTaskView] Registrando vista:', { taskId, userId, userName })
+
+    // Usar función RPC de Supabase para registrar la vista
+    const { data, error } = await supabase.rpc('record_task_view', {
+      task_id_param: taskId,
+      user_id_param: userId,
+      user_name_param: userName
+    })
+
+    if (error) {
+      console.error('[recordTaskView] Error al registrar vista:', error)
+      throw error
+    }
+
+    console.log('[recordTaskView] Vista registrada exitosamente:', data)
+    return { data, error: null }
+  } catch (error) {
+    console.error('[recordTaskView] Error:', error)
     return { data: null, error }
   }
 }
