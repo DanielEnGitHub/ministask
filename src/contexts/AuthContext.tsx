@@ -40,8 +40,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Cargar perfil: usa user_metadata inmediatamente y actualiza desde DB en background
   const loadProfile = async (userId: string, userFromSession: User): Promise<Profile | null> => {
-    console.log('[loadProfile] Starting for user:', userId)
-
     // 1. Construir perfil desde user_metadata INMEDIATAMENTE (siempre disponible)
     let profileFromMetadata: Profile | null = null
     if (userFromSession?.user_metadata?.role) {
@@ -53,7 +51,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         created_at: userFromSession.created_at,
         updated_at: new Date().toISOString(),
       } as Profile
-      console.log('[loadProfile] Profile from user_metadata:', profileFromMetadata)
     }
 
     // 2. Intentar cargar desde DB en background (sin bloquear)
@@ -65,10 +62,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .single()
       .then(({ data, error }) => {
         if (!error && data) {
-          console.log('[loadProfile] DB loaded successfully, updating profile:', data)
           setProfile(data)
-        } else {
-          console.log('[loadProfile] DB query failed:', error)
         }
       })
 
@@ -80,27 +74,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let mounted = true
 
-    console.log('[AuthContext] Initializing...')
-
     // Obtener sesión actual
     supabase.auth.getSession().then(async ({ data: { session } }) => {
-      console.log('[AuthContext] Got session:', session ? 'exists' : 'null')
       if (!mounted) return
 
       setSession(session)
       setUser(session?.user ?? null)
 
       if (session?.user) {
-        console.log('[AuthContext] Loading profile for user:', session.user.id)
         const profile = await loadProfile(session.user.id, session.user)
-        console.log('[AuthContext] Profile loaded:', profile)
         if (mounted) {
           setProfile(profile)
         }
       }
 
       if (mounted) {
-        console.log('[AuthContext] Setting loading to false')
         setLoading(false)
       }
     }).catch((error) => {
@@ -114,16 +102,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      console.log('[AuthContext] onAuthStateChange fired:', _event, session ? 'has session' : 'no session')
       if (!mounted) return
 
       setSession(session)
       setUser(session?.user ?? null)
 
       if (session?.user) {
-        console.log('[AuthContext] onAuthStateChange loading profile')
         const profile = await loadProfile(session.user.id, session.user)
-        console.log('[AuthContext] onAuthStateChange profile loaded:', profile)
         if (mounted) {
           setProfile(profile)
         }
@@ -134,7 +119,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (mounted) {
-        console.log('[AuthContext] onAuthStateChange setting loading to false')
         setLoading(false)
       }
     })

@@ -82,7 +82,6 @@ export function UserModal({ open, onClose, onSave, user, onUserCreated }: UserMo
         // Si se creó correctamente
         if (authData.user) {
           // El trigger de la base de datos creará automáticamente el perfil
-          console.log('[UserModal] User created successfully:', authData.user.id)
 
           // Llamar callback para recargar datos
           if (onUserCreated) {
