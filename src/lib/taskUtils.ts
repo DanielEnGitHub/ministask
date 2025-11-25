@@ -83,22 +83,3 @@ export function normalizeTask(task: any): Task {
     projectId: getTaskProjectId(task),
   }
 }
-
-/**
- * Convierte un objeto Date a formato YYYY-MM-DD para inputs HTML
- * Maneja valores null/undefined
- * Usa UTC para evitar problemas con zonas horarias
- */
-export function getDateInputValue(date: Date | string | null | undefined): string {
-  if (!date) return ''
-
-  const d = new Date(date)
-  if (isNaN(d.getTime())) return ''
-
-  // Usar UTC para evitar problemas de zona horaria
-  const year = d.getUTCFullYear()
-  const month = String(d.getUTCMonth() + 1).padStart(2, '0')
-  const day = String(d.getUTCDate()).padStart(2, '0')
-
-  return `${year}-${month}-${day}`
-}

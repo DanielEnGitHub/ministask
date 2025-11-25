@@ -278,24 +278,16 @@ export async function getTasksBySprint(sprintId: string) {
  */
 export async function recordTaskView(taskId: string, userId: string, userName: string) {
   try {
-    console.log('[recordTaskView] Registrando vista:', { taskId, userId, userName })
-
-    // Usar función RPC de Supabase para registrar la vista
     const { data, error } = await supabase.rpc('record_task_view', {
       task_id_param: taskId,
       user_id_param: userId,
       user_name_param: userName
     })
 
-    if (error) {
-      console.error('[recordTaskView] Error al registrar vista:', error)
-      throw error
-    }
+    if (error) throw error
 
-    console.log('[recordTaskView] Vista registrada exitosamente:', data)
     return { data, error: null }
   } catch (error) {
-    console.error('[recordTaskView] Error:', error)
     return { data: null, error }
   }
 }

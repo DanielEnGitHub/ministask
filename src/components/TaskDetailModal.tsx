@@ -41,29 +41,8 @@ export function TaskDetailModal({
   // Registrar vista cuando un NO admin abre el modal
   useEffect(() => {
     if (open && task && user && profile && !isAdmin) {
-      console.log('[TaskDetailModal] Usuario cliente abrió tarea:', {
-        taskId: task.id,
-        userId: user.id,
-        isAdmin,
-        profileName: profile.name,
-        userEmail: user.email
-      })
       const userName = profile.name || user.email || 'Usuario'
       TasksService.recordTaskView(task.id, user.id, userName)
-        .then(result => {
-          console.log('[TaskDetailModal] Resultado de recordTaskView:', result)
-        })
-        .catch(err => {
-          console.error('[TaskDetailModal] Error al registrar vista:', err)
-        })
-    } else {
-      console.log('[TaskDetailModal] No se registró vista:', {
-        open,
-        hasTask: !!task,
-        hasUser: !!user,
-        hasProfile: !!profile,
-        isAdmin
-      })
     }
   }, [open, task, user, profile, isAdmin])
 
@@ -90,10 +69,7 @@ export function TaskDetailModal({
     setLoadingComments(true)
     try {
       const { data, error } = await CommentsService.getCommentsByTask(task.id)
-      if (error) {
-        console.error('[loadComments] Error:', error)
-        return
-      }
+      if (error) return
 
       // Convertir datos de Supabase a formato frontend
       const formattedComments: Comment[] = (data || []).map((c: any) => ({
@@ -110,8 +86,6 @@ export function TaskDetailModal({
       // Organizar en árbol (comentarios con respuestas)
       const organized = organizeComments(formattedComments)
       setComments(organized)
-    } catch (error) {
-      console.error('[loadComments] Error:', error)
     } finally {
       setLoadingComments(false)
     }
@@ -150,7 +124,7 @@ export function TaskDetailModal({
     const userName = profile.name || user.email || 'Usuario'
 
     try {
-      const { data, error } = await CommentsService.createComment({
+      const { error } = await CommentsService.createComment({
         taskId: task.id,
         text: newComment.trim(),
         userId: user.id,
@@ -158,16 +132,13 @@ export function TaskDetailModal({
       })
 
       if (error) {
-        console.error('[handleAddComment] Error:', error)
         alert('Error al crear comentario')
         return
       }
 
-      // Recargar comentarios
       await loadComments()
       setNewComment('')
     } catch (error) {
-      console.error('[handleAddComment] Error:', error)
       alert('Error al crear comentario')
     }
   }
@@ -178,7 +149,7 @@ export function TaskDetailModal({
     const userName = profile.name || user.email || 'Usuario'
 
     try {
-      const { data, error } = await CommentsService.createComment({
+      const { error } = await CommentsService.createComment({
         taskId: task.id,
         text: replyText.trim(),
         userId: user.id,
@@ -187,17 +158,14 @@ export function TaskDetailModal({
       })
 
       if (error) {
-        console.error('[handleReply] Error:', error)
         alert('Error al crear respuesta')
         return
       }
 
-      // Recargar comentarios
       await loadComments()
       setReplyingTo(null)
       setReplyText('')
     } catch (error) {
-      console.error('[handleReply] Error:', error)
       alert('Error al crear respuesta')
     }
   }
@@ -209,15 +177,12 @@ export function TaskDetailModal({
       const { error } = await CommentsService.deleteComment(commentId)
 
       if (error) {
-        console.error('[handleDeleteComment] Error:', error)
         alert('Error al eliminar comentario')
         return
       }
 
-      // Recargar comentarios
       await loadComments()
     } catch (error) {
-      console.error('[handleDeleteComment] Error:', error)
       alert('Error al eliminar comentario')
     }
   }

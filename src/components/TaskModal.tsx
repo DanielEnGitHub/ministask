@@ -10,7 +10,8 @@ import type { Task, TaskStatus, TaskLabel, TaskPriority, SubTask, Project } from
 import { STATUS_CONFIG, LABEL_CONFIG, PRIORITY_CONFIG } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { usePermissions } from '@/hooks/usePermissions'
-import { getTaskStartDate, getTaskEndDate, getTaskProjectId, getTaskLabel, getDateInputValue } from '@/lib/taskUtils'
+import { getTaskStartDate, getTaskEndDate, getTaskProjectId, getTaskLabel } from '@/lib/taskUtils'
+import { toDateInputValue } from '@/lib/dateUtils'
 
 interface TaskModalProps {
   open: boolean
@@ -49,8 +50,8 @@ export function TaskModal({ open, onClose, onSave, task, projects = [], currentP
       setLabel(task.label || '')
       setPriority(task.priority || '')
       setSubtasks(task.subtasks || [])
-      setStartDate(getDateInputValue(getTaskStartDate(task)))
-      setEndDate(getDateInputValue(getTaskEndDate(task)))
+      setStartDate(toDateInputValue(getTaskStartDate(task)))
+      setEndDate(toDateInputValue(getTaskEndDate(task)))
 
       // Obtener el projectId de la tarea (prioriza project_id de Supabase)
       const taskProjectId = task.project_id || task.projectId
