@@ -109,8 +109,8 @@ export function Layout({
           sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         )}
       >
-        <div className="p-6 border-b border-border">
-          <div className="flex items-center gap-2 mb-2">
+        <div className="p-4 border-b border-border">
+          <div className="flex items-center gap-2 mb-3">
             <FolderKanban className="h-6 w-6 text-blue-600" />
             <h1 className="text-xl font-bold text-foreground">MiniTasks</h1>
             <button
@@ -125,31 +125,25 @@ export function Layout({
               )}
             </button>
           </div>
-          <p className="text-sm text-muted-foreground">{totalTasks} tareas totales</p>
 
-          {/* User info and logout */}
+          {/* User info compacto */}
           {profile && (
-            <div className="mt-3 pt-3 border-t border-border">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <User className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                    <p className="text-xs font-medium text-foreground truncate">
-                      {profile.full_name || profile.email}
-                    </p>
-                  </div>
-                  <p className="text-xs text-muted-foreground capitalize ml-5">
-                    {profile.role === 'admin' ? 'Administrador' : 'Cliente'}
-                  </p>
-                </div>
-                <button
-                  onClick={handleSignOut}
-                  className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-muted-foreground hover:text-red-600 dark:hover:text-red-400 transition-colors"
-                  title="Cerrar sesión"
-                >
-                  <LogOut className="h-4 w-4" />
-                </button>
+            <div className="flex items-center gap-2 px-2 py-1.5 bg-accent/30 rounded-lg">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-foreground truncate">
+                  {profile.full_name || profile.email}
+                </p>
+                <p className="text-[10px] text-muted-foreground capitalize">
+                  {profile.role === 'admin' ? 'Admin' : 'Cliente'}
+                </p>
               </div>
+              <button
+                onClick={handleSignOut}
+                className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 text-muted-foreground hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                title="Cerrar sesión"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+              </button>
             </div>
           )}
         </div>
@@ -320,33 +314,54 @@ export function Layout({
           </Accordion>
           </div>
 
-          {/* Estados - Fijo en la parte inferior del sidebar */}
+          {/* Resumen visual compacto */}
           {taskCounts && (
-            <div className="pt-4 mt-4 border-t border-border flex-shrink-0">
-              <p className="text-xs font-semibold text-muted-foreground uppercase px-3 mb-2">
-                Estado - {getFilterLabel()}
-              </p>
-              <div className="space-y-1 text-sm px-3">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Creados</span>
-                  <span className="font-medium text-foreground">{taskCounts.created}</span>
+            <div className="pt-3 mt-3 border-t border-border flex-shrink-0">
+              <div className="px-2">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase">
+                    {getFilterLabel()}
+                  </p>
+                  <p className="text-xs font-bold text-foreground">
+                    {totalTasks}
+                  </p>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">En Proceso</span>
-                  <span className="font-medium text-blue-600 dark:text-blue-400">{taskCounts.in_progress}</span>
+
+                {/* Grid de estadísticas */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-2">
+                    <div className="text-[10px] text-blue-600 dark:text-blue-400 font-medium">En Proceso</div>
+                    <div className="text-lg font-bold text-blue-700 dark:text-blue-300">{taskCounts.in_progress}</div>
+                  </div>
+                  <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-2">
+                    <div className="text-[10px] text-green-600 dark:text-green-400 font-medium">Completadas</div>
+                    <div className="text-lg font-bold text-green-700 dark:text-green-300">{taskCounts.completed}</div>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Pausados</span>
-                  <span className="font-medium text-yellow-600 dark:text-yellow-400">{taskCounts.paused}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Cancelados</span>
-                  <span className="font-medium text-red-600 dark:text-red-400">{taskCounts.cancelled}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Finalizados</span>
-                  <span className="font-medium text-green-600 dark:text-green-400">{taskCounts.completed}</span>
-                </div>
+
+                {/* Otras estadísticas solo si hay datos */}
+                {(taskCounts.paused > 0 || taskCounts.cancelled > 0 || taskCounts.created > 0) && (
+                  <div className="flex gap-2 mt-2 text-xs">
+                    {taskCounts.created > 0 && (
+                      <div className="flex items-center gap-1">
+                        <div className="w-2 h-2 rounded-full bg-gray-400"></div>
+                        <span className="text-muted-foreground">{taskCounts.created}</span>
+                      </div>
+                    )}
+                    {taskCounts.paused > 0 && (
+                      <div className="flex items-center gap-1">
+                        <div className="w-2 h-2 rounded-full bg-yellow-400"></div>
+                        <span className="text-muted-foreground">{taskCounts.paused}</span>
+                      </div>
+                    )}
+                    {taskCounts.cancelled > 0 && (
+                      <div className="flex items-center gap-1">
+                        <div className="w-2 h-2 rounded-full bg-red-400"></div>
+                        <span className="text-muted-foreground">{taskCounts.cancelled}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           )}

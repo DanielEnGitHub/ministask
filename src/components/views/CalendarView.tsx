@@ -240,12 +240,9 @@ export function CalendarView({
                               )}
                               onClick={() => onEditTask(task)}
                             >
-                              <div className="flex items-center gap-0.5 md:gap-1">
-                                {task.label && (
-                                  <span className="text-[10px] md:text-xs hidden md:inline">{LABEL_CONFIG[task.label].icon}</span>
-                                )}
-                                {task.priority && (
-                                  <span className="text-[10px] md:text-xs hidden md:inline">{PRIORITY_CONFIG[task.priority].icon}</span>
+                              <div className="flex items-center gap-1">
+                                {task.priority === 'alta' && (
+                                  <span className="text-[10px]">🔴</span>
                                 )}
                                 <div className="truncate font-medium flex-1 leading-tight">{task.title}</div>
                               </div>
@@ -301,72 +298,32 @@ export function CalendarView({
         </div>
       </div>
 
-      {/* Tasks without dates */}
-      {tasksWithDates.length < tasks.length && (
-        <Card>
-          <CardContent className="p-4">
-            <h3 className="text-sm font-semibold text-muted-foreground mb-3">
-              Tareas sin fecha ({tasks.length - tasksWithDates.length})
-            </h3>
-            <div className="space-y-2">
-              {tasks
-                .filter((task) => !hasTaskDates(task))
-                .slice(0, 5)
-                .map((task) => (
-                  <div
-                    key={task.id}
-                    className="flex items-center justify-between gap-2 p-2 hover:bg-accent/50 rounded-lg"
-                  >
-                    <div className="flex items-center gap-2 flex-1">
-                      <Badge
-                        className={cn(
-                          STATUS_CONFIG[task.status].bgColor,
-                          STATUS_CONFIG[task.status].color,
-                          'border-0'
-                        )}
-                      >
-                        {STATUS_CONFIG[task.status].label}
-                      </Badge>
-                      {task.label && (
-                        <Badge
-                          className={cn(
-                            LABEL_CONFIG[task.label].bgColor,
-                            LABEL_CONFIG[task.label].color,
-                            'border-0 text-xs'
-                          )}
-                        >
-                          {LABEL_CONFIG[task.label].icon} {LABEL_CONFIG[task.label].label}
-                        </Badge>
-                      )}
-                      {task.priority && (
-                        <Badge
-                          className={cn(
-                            PRIORITY_CONFIG[task.priority].bgColor,
-                            PRIORITY_CONFIG[task.priority].color,
-                            'border-0 text-xs'
-                          )}
-                        >
-                          {PRIORITY_CONFIG[task.priority].icon} {PRIORITY_CONFIG[task.priority].label}
-                        </Badge>
-                      )}
-                      <span className="text-sm">{task.title}</span>
-                    </div>
-                    <div className="flex gap-1">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-7 w-7"
-                        onClick={() => onEditTask(task)}
-                        title="Ver detalles"
-                      >
-                        <Eye className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-            </div>
-          </CardContent>
-        </Card>
+      {/* Tareas sin fecha - solo mostrar si hay pocas */}
+      {tasksWithDates.length < tasks.length && tasks.length - tasksWithDates.length <= 5 && (
+        <div className="bg-accent/20 rounded-lg p-3">
+          <h3 className="text-xs font-semibold text-muted-foreground mb-2">
+            Sin fecha asignada ({tasks.length - tasksWithDates.length})
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            {tasks
+              .filter((task) => !hasTaskDates(task))
+              .map((task) => (
+                <button
+                  key={task.id}
+                  onClick={() => onEditTask(task)}
+                  className={cn(
+                    'text-xs px-2 py-1 rounded transition-colors',
+                    STATUS_CONFIG[task.status].bgColor,
+                    STATUS_CONFIG[task.status].color,
+                    'hover:opacity-80'
+                  )}
+                >
+                  {task.priority === 'alta' && '🔴 '}
+                  {task.title}
+                </button>
+              ))}
+          </div>
+        </div>
       )}
 
       <ConfirmDialog />

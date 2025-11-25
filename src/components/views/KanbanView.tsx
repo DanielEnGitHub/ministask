@@ -118,35 +118,29 @@ export function KanbanView({
                               snapshot.isDragging && 'shadow-lg rotate-2'
                             )}
                           >
-                            <CardContent className="p-4">
-                              <div className="space-y-3">
+                            <CardContent className="p-3">
+                              <div className="space-y-2">
                                 <div className="flex items-start justify-between gap-2">
-                                  <div className="flex-1 space-y-2">
-                                    <h4 className="font-medium text-card-foreground">
+                                  <div className="flex-1">
+                                    <h4 className="font-medium text-card-foreground text-sm leading-tight mb-1.5">
                                       {task.title}
                                     </h4>
-                                    <div className="flex gap-2 flex-wrap">
-                                      {task.label && (
-                                        <Badge
-                                          className={cn(
-                                            LABEL_CONFIG[task.label].bgColor,
-                                            LABEL_CONFIG[task.label].color,
-                                            'border-0 text-xs'
-                                          )}
-                                        >
-                                          {LABEL_CONFIG[task.label].icon} {LABEL_CONFIG[task.label].label}
-                                        </Badge>
-                                      )}
+                                    {/* Solo mostrar badges si son importantes */}
+                                    <div className="flex gap-1.5 flex-wrap">
                                       {task.priority && (
-                                        <Badge
-                                          className={cn(
-                                            PRIORITY_CONFIG[task.priority].bgColor,
-                                            PRIORITY_CONFIG[task.priority].color,
-                                            'border-0 text-xs'
-                                          )}
-                                        >
-                                          {PRIORITY_CONFIG[task.priority].icon} {PRIORITY_CONFIG[task.priority].label}
-                                        </Badge>
+                                        <span className={cn(
+                                          'text-xs flex items-center gap-0.5',
+                                          task.priority === 'alta' && 'text-red-600 dark:text-red-400',
+                                          task.priority === 'media' && 'text-yellow-600 dark:text-yellow-400',
+                                          task.priority === 'baja' && 'text-green-600 dark:text-green-400'
+                                        )}>
+                                          {PRIORITY_CONFIG[task.priority].icon}
+                                        </span>
+                                      )}
+                                      {task.label && (
+                                        <span className="text-xs text-muted-foreground">
+                                          {LABEL_CONFIG[task.label].icon}
+                                        </span>
                                       )}
                                     </div>
                                   </div>
@@ -189,34 +183,22 @@ export function KanbanView({
                                   </div>
                                 </div>
 
-                                {task.description && (
-                                  <p className="text-sm text-muted-foreground line-clamp-2">
-                                    {task.description}
-                                  </p>
-                                )}
-
-                                <div className="space-y-2">
+                                {/* Metadata compacta */}
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                   {task.subtasks && task.subtasks.length > 0 && (
-                                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                    <span className="flex items-center gap-0.5">
                                       <CheckSquare className="h-3 w-3" />
-                                      <span>
-                                        {getCompletedSubtasks(task)} subtareas
-                                      </span>
-                                    </div>
+                                      {getCompletedSubtasks(task)}
+                                    </span>
                                   )}
 
                                   {(() => {
-                                    const startDate = getTaskStartDate(task)
                                     const endDate = getTaskEndDate(task)
-                                    return (startDate || endDate) && (
-                                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                    return endDate && (
+                                      <span className="flex items-center gap-0.5">
                                         <Calendar className="h-3 w-3" />
-                                        <span>
-                                          {startDate && formatDateForDisplay(startDate)}
-                                          {startDate && endDate && ' - '}
-                                          {endDate && formatDateForDisplay(endDate)}
-                                        </span>
-                                      </div>
+                                        {formatDateForDisplay(endDate)}
+                                      </span>
                                     )
                                   })()}
                                 </div>
