@@ -19,6 +19,7 @@ import {
 } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { useConfirm } from '@/hooks/useConfirm'
+import { usePermissions } from '@/hooks/usePermissions'
 import { normalizeDate, isDateInRange } from '@/lib/dateUtils'
 import { getTaskStartDate, getTaskEndDate, hasTaskDates } from '@/lib/taskUtils'
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd'
@@ -38,6 +39,8 @@ export function CalendarView({
 }: CalendarViewProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const { confirm, ConfirmDialog } = useConfirm()
+  const permissions = usePermissions()
+  const canDragTasks = permissions.canEditTask // Solo admins pueden editar tareas
 
   const monthStart = startOfMonth(currentMonth)
   const monthEnd = endOfMonth(currentMonth)
@@ -84,6 +87,9 @@ export function CalendarView({
   }
 
   const handleDragEnd = (result: DropResult) => {
+    // Solo permitir drag & drop si el usuario tiene permisos
+    if (!canDragTasks) return
+
     const { draggableId, destination } = result
 
     if (!destination) return
@@ -212,14 +218,20 @@ export function CalendarView({
 
                     <div className="space-y-1 overflow-y-auto max-h-[80px]">
                       {dayTasks.slice(0, 3).map((task, index) => (
-                        <Draggable key={task.id} draggableId={task.id} index={index}>
+                        <Draggable
+                          key={task.id}
+                          draggableId={task.id}
+                          index={index}
+                          isDragDisabled={!canDragTasks}
+                        >
                           {(provided, snapshot) => (
                             <div
                               ref={provided.innerRef}
                               {...provided.draggableProps}
                               {...provided.dragHandleProps}
                               className={cn(
-                                'text-xs p-1.5 rounded cursor-move group relative',
+                                'text-xs p-1.5 rounded group relative',
+                                canDragTasks ? 'cursor-move' : 'cursor-pointer',
                                 STATUS_CONFIG[task.status].bgColor,
                                 STATUS_CONFIG[task.status].color,
                                 snapshot.isDragging && 'opacity-50 shadow-lg'
