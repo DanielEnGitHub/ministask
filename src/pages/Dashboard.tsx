@@ -247,6 +247,26 @@ export function Dashboard() {
     }
   }
 
+  const handleUpdateTaskDates = async (
+    taskId: string,
+    startDate: Date | undefined,
+    endDate: Date | undefined
+  ) => {
+    try {
+      const { data } = await TasksService.updateTask(taskId, {
+        startDate,
+        endDate,
+      })
+
+      if (data) {
+        // @ts-ignore - Supabase generated types issue
+        setTasks(prev => prev.map(t => t.id === data.id ? data : t))
+      }
+    } catch (error) {
+      console.error('Error updating task dates:', error)
+    }
+  }
+
   const handleDeleteProject = async (projectId: string) => {
     try {
       const { error } = await ProjectsService.deleteProject(projectId)
@@ -325,6 +345,7 @@ export function Dashboard() {
           tasks={filteredTasks}
           onEditTask={handleViewTask}
           onDeleteTask={handleDeleteTask}
+          onUpdateTaskDates={handleUpdateTaskDates}
         />
       )}
 
