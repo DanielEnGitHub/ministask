@@ -155,7 +155,7 @@ export function Layout({
         </div>
 
         <nav className="flex-1 p-4 flex flex-col overflow-hidden">
-          <div className="mb-4 space-y-2">
+          <div className="mb-4 space-y-3">
             <Button onClick={onNewTask} className="w-full" size="sm">
               <Plus className="h-4 w-4 mr-2" />
               Nueva Tarea
@@ -163,7 +163,7 @@ export function Layout({
 
             {/* Botón Gestión de Usuarios (solo admin) */}
             {permissions.canViewAllUsers && (
-              <Link to="/users">
+              <Link to="/users" className="block">
                 <Button
                   variant={location.pathname === '/users' ? 'default' : 'outline'}
                   className="w-full"
