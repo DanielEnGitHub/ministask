@@ -14,7 +14,12 @@ export interface Comment {
   id: string;
   taskId: string;
   text: string;
+  userId: string;
+  userName: string;
+  parentCommentId?: string | null; // Para respuestas anidadas
   createdAt: Date;
+  updatedAt: Date;
+  replies?: Comment[]; // Respuestas anidadas (calculado en frontend)
 }
 
 export interface TaskView {

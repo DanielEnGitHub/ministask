@@ -8,34 +8,34 @@
 
 /**
  * Convierte una fecha a formato YYYY-MM-DD para inputs de tipo date
+ * Usa UTC para evitar problemas de zona horaria
  */
 export function toDateInputValue(date: Date | string | null | undefined): string {
   if (!date) return ''
 
   const d = new Date(date)
-  const year = d.getFullYear()
-  const month = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
+  const year = d.getUTCFullYear()
+  const month = String(d.getUTCMonth() + 1).padStart(2, '0')
+  const day = String(d.getUTCDate()).padStart(2, '0')
 
   return `${year}-${month}-${day}`
 }
 
 /**
  * Formatea una fecha para mostrarla al usuario, evitando problemas de timezone
+ * Usa UTC para extraer los componentes de la fecha y evitar desfase
  */
 export function formatDateForDisplay(date: Date | string | null | undefined): string {
   if (!date) return ''
 
   const d = new Date(date)
 
-  // Crear una fecha en hora local ignorando timezone
-  const localDate = new Date(d.getFullYear(), d.getMonth(), d.getDate())
+  // Usar UTC para extraer los componentes y evitar desfase por zona horaria
+  const year = d.getUTCFullYear()
+  const month = String(d.getUTCMonth() + 1).padStart(2, '0')
+  const day = String(d.getUTCDate()).padStart(2, '0')
 
-  return localDate.toLocaleDateString('es-ES', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
-  })
+  return `${day}/${month}/${year}`
 }
 
 /**

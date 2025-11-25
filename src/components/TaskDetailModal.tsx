@@ -2,14 +2,16 @@ import { useEffect, useState } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
+import { Textarea } from './ui/textarea'
 import { cn } from '@/lib/utils'
-import type { Task, Project } from '@/lib/types'
+import type { Task, Project, Comment } from '@/lib/types'
 import { STATUS_CONFIG, LABEL_CONFIG, PRIORITY_CONFIG } from '@/lib/types'
-import { Calendar, Folder, Edit2, CheckSquare, Square, Eye, ChevronDown, ChevronUp } from 'lucide-react'
+import { Calendar, Folder, Edit2, CheckSquare, Square, Eye, ChevronDown, ChevronUp, MessageSquare, Send, Reply, Trash2, X } from 'lucide-react'
 import { formatDateForDisplay } from '@/lib/dateUtils'
 import { getTaskProjectId, getTaskStartDate, getTaskEndDate } from '@/lib/taskUtils'
 import { useAuth } from '@/contexts/AuthContext'
 import * as TasksService from '@/services/tasks.service'
+import * as CommentsService from '@/services/comments.service'
 
 interface TaskDetailModalProps {
   open: boolean
@@ -28,6 +30,13 @@ export function TaskDetailModal({
 }: TaskDetailModalProps) {
   const { user, profile, isAdmin } = useAuth()
   const [showViews, setShowViews] = useState(false)
+
+  // Estado para comentarios
+  const [comments, setComments] = useState<Comment[]>([])
+  const [newComment, setNewComment] = useState('')
+  const [replyingTo, setReplyingTo] = useState<string | null>(null)
+  const [replyText, setReplyText] = useState('')
+  const [loadingComments, setLoadingComments] = useState(false)
 
   // Registrar vista cuando un NO admin abre el modal
   useEffect(() => {
@@ -58,12 +67,160 @@ export function TaskDetailModal({
     }
   }, [open, task, user, profile, isAdmin])
 
-  // Resetear showViews cuando se cierra el modal
+  // Resetear estado cuando se cierra el modal
   useEffect(() => {
     if (!open) {
       setShowViews(false)
+      setNewComment('')
+      setReplyingTo(null)
+      setReplyText('')
     }
   }, [open])
+
+  // Cargar comentarios cuando se abre el modal
+  useEffect(() => {
+    if (open && task) {
+      loadComments()
+    }
+  }, [open, task])
+
+  const loadComments = async () => {
+    if (!task) return
+
+    setLoadingComments(true)
+    try {
+      const { data, error } = await CommentsService.getCommentsByTask(task.id)
+      if (error) {
+        console.error('[loadComments] Error:', error)
+        return
+      }
+
+      // Convertir datos de Supabase a formato frontend
+      const formattedComments: Comment[] = (data || []).map((c: any) => ({
+        id: c.id,
+        taskId: c.task_id,
+        text: c.text,
+        userId: c.user_id,
+        userName: c.user_name,
+        parentCommentId: c.parent_comment_id,
+        createdAt: new Date(c.created_at),
+        updatedAt: new Date(c.updated_at),
+      }))
+
+      // Organizar en árbol (comentarios con respuestas)
+      const organized = organizeComments(formattedComments)
+      setComments(organized)
+    } catch (error) {
+      console.error('[loadComments] Error:', error)
+    } finally {
+      setLoadingComments(false)
+    }
+  }
+
+  // Organizar comentarios en árbol con respuestas anidadas
+  const organizeComments = (flatComments: Comment[]): Comment[] => {
+    const commentMap = new Map<string, Comment>()
+    const rootComments: Comment[] = []
+
+    // Crear mapa de comentarios
+    flatComments.forEach(comment => {
+      commentMap.set(comment.id, { ...comment, replies: [] })
+    })
+
+    // Organizar en árbol
+    flatComments.forEach(comment => {
+      const commentWithReplies = commentMap.get(comment.id)!
+      if (comment.parentCommentId) {
+        const parent = commentMap.get(comment.parentCommentId)
+        if (parent) {
+          parent.replies = parent.replies || []
+          parent.replies.push(commentWithReplies)
+        }
+      } else {
+        rootComments.push(commentWithReplies)
+      }
+    })
+
+    return rootComments
+  }
+
+  const handleAddComment = async () => {
+    if (!task || !user || !profile || !newComment.trim()) return
+
+    const userName = profile.name || user.email || 'Usuario'
+
+    try {
+      const { data, error } = await CommentsService.createComment({
+        taskId: task.id,
+        text: newComment.trim(),
+        userId: user.id,
+        userName,
+      })
+
+      if (error) {
+        console.error('[handleAddComment] Error:', error)
+        alert('Error al crear comentario')
+        return
+      }
+
+      // Recargar comentarios
+      await loadComments()
+      setNewComment('')
+    } catch (error) {
+      console.error('[handleAddComment] Error:', error)
+      alert('Error al crear comentario')
+    }
+  }
+
+  const handleReply = async (parentCommentId: string) => {
+    if (!task || !user || !profile || !replyText.trim()) return
+
+    const userName = profile.name || user.email || 'Usuario'
+
+    try {
+      const { data, error } = await CommentsService.createComment({
+        taskId: task.id,
+        text: replyText.trim(),
+        userId: user.id,
+        userName,
+        parentCommentId,
+      })
+
+      if (error) {
+        console.error('[handleReply] Error:', error)
+        alert('Error al crear respuesta')
+        return
+      }
+
+      // Recargar comentarios
+      await loadComments()
+      setReplyingTo(null)
+      setReplyText('')
+    } catch (error) {
+      console.error('[handleReply] Error:', error)
+      alert('Error al crear respuesta')
+    }
+  }
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!confirm('¿Estás seguro de eliminar este comentario?')) return
+
+    try {
+      const { error } = await CommentsService.deleteComment(commentId)
+
+      if (error) {
+        console.error('[handleDeleteComment] Error:', error)
+        alert('Error al eliminar comentario')
+        return
+      }
+
+      // Recargar comentarios
+      await loadComments()
+    } catch (error) {
+      console.error('[handleDeleteComment] Error:', error)
+      alert('Error al eliminar comentario')
+    }
+  }
 
   if (!task) return null
 
@@ -302,8 +459,230 @@ export function TaskDetailModal({
               )}
             </div>
           )}
+
+          {/* Sección de Comentarios */}
+          <div className="border-t pt-6">
+            <div className="flex items-center gap-2 mb-4">
+              <MessageSquare className="h-5 w-5 text-gray-600" />
+              <h3 className="text-lg font-semibold text-gray-900">
+                Comentarios
+                {comments.length > 0 && (
+                  <Badge variant="secondary" className="ml-2">
+                    {comments.reduce((acc, c) => acc + 1 + (c.replies?.length || 0), 0)}
+                  </Badge>
+                )}
+              </h3>
+            </div>
+
+            {/* Formulario para nuevo comentario */}
+            <div className="mb-6">
+              <Textarea
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                placeholder="Escribe un comentario..."
+                rows={3}
+                className="mb-2"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && e.ctrlKey) {
+                    handleAddComment()
+                  }
+                }}
+              />
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-500">Ctrl + Enter para enviar</span>
+                <Button
+                  onClick={handleAddComment}
+                  disabled={!newComment.trim()}
+                  size="sm"
+                >
+                  <Send className="h-4 w-4 mr-1" />
+                  Comentar
+                </Button>
+              </div>
+            </div>
+
+            {/* Lista de comentarios */}
+            {loadingComments ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+              </div>
+            ) : comments.length === 0 ? (
+              <div className="text-center py-8 text-gray-500 text-sm bg-gray-50 rounded-lg">
+                <MessageSquare className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                <p>No hay comentarios aún. ¡Sé el primero en comentar!</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {comments.map((comment) => (
+                  <CommentItem
+                    key={comment.id}
+                    comment={comment}
+                    currentUserId={user?.id || ''}
+                    replyingTo={replyingTo}
+                    replyText={replyText}
+                    onReply={(id) => setReplyingTo(id)}
+                    onCancelReply={() => {
+                      setReplyingTo(null)
+                      setReplyText('')
+                    }}
+                    onReplyTextChange={setReplyText}
+                    onSubmitReply={handleReply}
+                    onDelete={handleDeleteComment}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>
+  )
+}
+
+// Componente para renderizar comentarios individuales con respuestas anidadas
+interface CommentItemProps {
+  comment: Comment
+  currentUserId: string
+  replyingTo: string | null
+  replyText: string
+  onReply: (commentId: string) => void
+  onCancelReply: () => void
+  onReplyTextChange: (text: string) => void
+  onSubmitReply: (parentId: string) => void
+  onDelete: (commentId: string) => void
+  depth?: number
+}
+
+function CommentItem({
+  comment,
+  currentUserId,
+  replyingTo,
+  replyText,
+  onReply,
+  onCancelReply,
+  onReplyTextChange,
+  onSubmitReply,
+  onDelete,
+  depth = 0
+}: CommentItemProps) {
+  const isOwner = comment.userId === currentUserId
+  const isReplying = replyingTo === comment.id
+  const maxDepth = 3 // Máxima profundidad de anidamiento
+
+  return (
+    <div className={cn('space-y-3', depth > 0 && 'ml-8 border-l-2 border-gray-200 pl-4')}>
+      <div className="bg-gray-50 rounded-lg p-4">
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+              <span className="text-sm font-semibold text-blue-600">
+                {comment.userName.charAt(0).toUpperCase()}
+              </span>
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-gray-900">{comment.userName}</p>
+              <p className="text-xs text-gray-500">
+                {new Date(comment.createdAt).toLocaleString('es-ES', {
+                  year: 'numeric',
+                  month: '2-digit',
+                  day: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </p>
+            </div>
+          </div>
+          {isOwner && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-50"
+              onClick={() => onDelete(comment.id)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+
+        <p className="text-sm text-gray-700 whitespace-pre-wrap mb-3">{comment.text}</p>
+
+        {depth < maxDepth && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs"
+            onClick={() => isReplying ? onCancelReply() : onReply(comment.id)}
+          >
+            {isReplying ? (
+              <>
+                <X className="h-3 w-3 mr-1" />
+                Cancelar
+              </>
+            ) : (
+              <>
+                <Reply className="h-3 w-3 mr-1" />
+                Responder
+              </>
+            )}
+          </Button>
+        )}
+
+        {/* Formulario de respuesta */}
+        {isReplying && (
+          <div className="mt-3 space-y-2">
+            <Textarea
+              value={replyText}
+              onChange={(e) => onReplyTextChange(e.target.value)}
+              placeholder="Escribe una respuesta..."
+              rows={2}
+              className="text-sm"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && e.ctrlKey) {
+                  onSubmitReply(comment.id)
+                }
+              }}
+            />
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onCancelReply}
+              >
+                Cancelar
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => onSubmitReply(comment.id)}
+                disabled={!replyText.trim()}
+              >
+                <Send className="h-3 w-3 mr-1" />
+                Responder
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Renderizar respuestas anidadas */}
+      {comment.replies && comment.replies.length > 0 && (
+        <div className="space-y-3">
+          {comment.replies.map((reply) => (
+            <CommentItem
+              key={reply.id}
+              comment={reply}
+              currentUserId={currentUserId}
+              replyingTo={replyingTo}
+              replyText={replyText}
+              onReply={onReply}
+              onCancelReply={onCancelReply}
+              onReplyTextChange={onReplyTextChange}
+              onSubmitReply={onSubmitReply}
+              onDelete={onDelete}
+              depth={depth + 1}
+            />
+          ))}
+        </div>
+      )}
+    </div>
   )
 }

@@ -35,6 +35,7 @@ export function TaskModal({ open, onClose, onSave, task, projects = [], currentP
   const [projectId, setProjectId] = useState<string>('')
   const [images, setImages] = useState<string[]>([])
   const [isDataLoaded, setIsDataLoaded] = useState(false)
+  const [dateError, setDateError] = useState('')
 
   useEffect(() => {
     if (open && task) {
@@ -89,6 +90,32 @@ export function TaskModal({ open, onClose, onSave, task, projects = [], currentP
     setEndDate('')
     setProjectId(currentProjectId || '')
     setImages([])
+    setDateError('')
+  }
+
+  // Validar fechas en tiempo real
+  const validateDates = (start: string, end: string) => {
+    if (start && end) {
+      const startDateObj = new Date(start)
+      const endDateObj = new Date(end)
+      if (startDateObj > endDateObj) {
+        setDateError('La fecha de inicio no puede ser posterior a la fecha de fin')
+      } else {
+        setDateError('')
+      }
+    } else {
+      setDateError('')
+    }
+  }
+
+  const handleStartDateChange = (value: string) => {
+    setStartDate(value)
+    validateDates(value, endDate)
+  }
+
+  const handleEndDateChange = (value: string) => {
+    setEndDate(value)
+    validateDates(startDate, value)
   }
 
   const handleAddSubtask = () => {
@@ -140,6 +167,16 @@ export function TaskModal({ open, onClose, onSave, task, projects = [], currentP
     if (!projectId) {
       alert('Por favor, selecciona un proyecto')
       return
+    }
+
+    // Validar que la fecha de inicio no sea posterior a la fecha de fin
+    if (startDate && endDate) {
+      const start = new Date(startDate)
+      const end = new Date(endDate)
+      if (start > end) {
+        alert('La fecha de inicio no puede ser posterior a la fecha de fin')
+        return
+      }
     }
 
     // Función auxiliar para crear una fecha en UTC medianoche
@@ -333,7 +370,8 @@ export function TaskModal({ open, onClose, onSave, task, projects = [], currentP
               <Input
                 type="date"
                 value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+                onChange={(e) => handleStartDateChange(e.target.value)}
+                className={cn(dateError && 'border-red-500')}
               />
             </div>
             <div>
@@ -343,10 +381,14 @@ export function TaskModal({ open, onClose, onSave, task, projects = [], currentP
               <Input
                 type="date"
                 value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
+                onChange={(e) => handleEndDateChange(e.target.value)}
+                className={cn(dateError && 'border-red-500')}
               />
             </div>
           </div>
+          {dateError && (
+            <p className="text-sm text-red-600 -mt-2">{dateError}</p>
+          )}
 
           {/* Imágenes */}
           <div>
@@ -457,7 +499,7 @@ export function TaskModal({ open, onClose, onSave, task, projects = [], currentP
             <Button type="button" variant="outline" onClick={onClose}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={!title.trim() || !projectId || projects.length === 0}>
+            <Button type="submit" disabled={!title.trim() || !projectId || projects.length === 0 || !!dateError}>
               {task ? 'Guardar Cambios' : 'Crear Tarea'}
             </Button>
           </div>

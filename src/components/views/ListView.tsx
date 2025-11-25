@@ -7,10 +7,10 @@ import { Badge } from '../ui/badge'
 import type { Task } from '@/lib/types'
 import { STATUS_CONFIG, LABEL_CONFIG, PRIORITY_CONFIG } from '@/lib/types'
 import { cn } from '@/lib/utils'
-import { format } from 'date-fns'
 import { useConfirm } from '@/hooks/useConfirm'
 import { usePermissions } from '@/hooks/usePermissions'
 import { getTaskStartDate, getTaskEndDate } from '@/lib/taskUtils'
+import { formatDateForDisplay } from '@/lib/dateUtils'
 
 interface ListViewProps {
   tasks: Task[]
@@ -130,11 +130,9 @@ export function ListView({ tasks, onEditTask, onDeleteTask }: ListViewProps) {
                           <div className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
                             <span>
-                              {startDate &&
-                                format(new Date(startDate), 'dd/MM/yyyy')}
+                              {startDate && formatDateForDisplay(startDate)}
                               {startDate && endDate && ' - '}
-                              {endDate &&
-                                format(new Date(endDate), 'dd/MM/yyyy')}
+                              {endDate && formatDateForDisplay(endDate)}
                             </span>
                           </div>
                         )
