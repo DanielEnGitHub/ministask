@@ -64,11 +64,11 @@ export function KanbanView({
   }
 
   return (
-    <div className="p-6 h-full overflow-x-auto">
+    <div className="p-3 md:p-6 h-full overflow-x-auto">
       <DragDropContext onDragEnd={handleDragEnd}>
-        <div className="flex gap-4 min-w-max h-full">
+        <div className="flex gap-3 md:gap-4 min-w-max h-full">
           {STATUS_ORDER.map((status) => (
-            <div key={status} className="flex-shrink-0 w-80">
+            <div key={status} className="flex-shrink-0 w-72 md:w-80">
               <div className="mb-3 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div

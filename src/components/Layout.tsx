@@ -1,4 +1,5 @@
-import { List, Kanban, Calendar, FolderKanban, Plus, Folder, Edit, Trash2, Moon, Sun, LogOut, User, Users } from 'lucide-react'
+import { useState } from 'react'
+import { List, Kanban, Calendar, FolderKanban, Plus, Folder, Edit, Trash2, Moon, Sun, LogOut, User, Users, Menu, X } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { Button } from './ui/button'
@@ -48,7 +49,7 @@ export function Layout({
   theme = 'light',
   onToggleTheme,
 }: LayoutProps) {
-  const sidebarOpen = true
+  const [sidebarOpen, setSidebarOpen] = useState(false) // Cerrado por defecto en móvil
   const { confirm, ConfirmDialog } = useConfirm()
   const { profile, signOut } = useAuth()
   const permissions = usePermissions()
@@ -88,11 +89,24 @@ export function Layout({
 
   return (
     <div className="flex h-screen bg-background">
+      {/* Backdrop para móvil */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
       <aside
         className={cn(
-          'bg-card border-r border-border transition-all duration-300 flex flex-col',
-          sidebarOpen ? 'w-64' : 'w-0 overflow-hidden'
+          'bg-card border-r border-border transition-all duration-300 flex flex-col z-50',
+          // Mobile: sidebar fixed overlay
+          'fixed lg:relative inset-y-0 left-0',
+          // Ancho
+          'w-64',
+          // Mostrar/ocultar
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         )}
       >
         <div className="p-6 border-b border-border">
@@ -341,6 +355,28 @@ export function Layout({
 
       {/* Main content */}
       <main className="flex-1 overflow-hidden flex flex-col">
+        {/* Header con menú hamburguesa (solo móvil) */}
+        <div className="lg:hidden bg-card border-b border-border p-4 flex items-center gap-3">
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="p-2 rounded-lg hover:bg-accent transition-colors"
+            aria-label="Toggle menu"
+          >
+            {sidebarOpen ? (
+              <X className="h-5 w-5 text-foreground" />
+            ) : (
+              <Menu className="h-5 w-5 text-foreground" />
+            )}
+          </button>
+          <div className="flex items-center gap-2">
+            <FolderKanban className="h-5 w-5 text-blue-600" />
+            <h1 className="text-lg font-bold text-foreground">MiniTasks</h1>
+          </div>
+          <div className="ml-auto">
+            <span className="text-sm text-muted-foreground">{getFilterLabel()}</span>
+          </div>
+        </div>
+
         <div className="flex-1 overflow-y-auto">
           {children}
         </div>

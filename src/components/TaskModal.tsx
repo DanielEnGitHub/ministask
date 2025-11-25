@@ -209,7 +209,7 @@ export function TaskModal({ open, onClose, onSave, task, projects = [], currentP
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent onClose={onClose} className="max-w-2xl">
+      <DialogContent onClose={onClose} className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{task ? 'Editar Tarea' : 'Nueva Tarea'}</DialogTitle>
         </DialogHeader>

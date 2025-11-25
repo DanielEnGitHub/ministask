@@ -127,15 +127,15 @@ export function CalendarView({
 
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
-      <div className="p-6 space-y-6">
+      <div className="p-3 md:p-6 space-y-4 md:space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-gray-900">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <h2 className="text-xl md:text-2xl font-bold text-gray-900">
             {format(currentMonth, 'MMMM yyyy', { locale: es })}
           </h2>
 
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handleToday}>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Button variant="outline" size="sm" onClick={handleToday} className="flex-1 sm:flex-none">
               Hoy
             </Button>
             <Button
@@ -159,12 +159,14 @@ export function CalendarView({
         <div className="border rounded-2xl overflow-hidden bg-white">
         {/* Weekday headers */}
         <div className="grid grid-cols-7 bg-gray-50 border-b">
-          {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map((day) => (
+          {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((day, i) => (
             <div
               key={day}
-              className="p-3 text-center text-sm font-semibold text-gray-600"
+              className="p-2 md:p-3 text-center text-xs md:text-sm font-semibold text-gray-600"
+              title={['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'][i]}
             >
-              {day}
+              <span className="md:hidden">{day}</span>
+              <span className="hidden md:inline">{['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'][i]}</span>
             </div>
           ))}
         </div>
@@ -176,7 +178,7 @@ export function CalendarView({
             (_, i) => (
               <div
                 key={`empty-${i}`}
-                className="min-h-[120px] border-r border-b bg-gray-50"
+                className="min-h-[80px] md:min-h-[120px] border-r border-b bg-gray-50"
               />
             )
           )}
@@ -193,7 +195,7 @@ export function CalendarView({
                     ref={provided.innerRef}
                     {...provided.droppableProps}
                     className={cn(
-                      'min-h-[120px] border-r border-b p-2 space-y-1',
+                      'min-h-[80px] md:min-h-[120px] border-r border-b p-1 md:p-2 space-y-1',
                       isToday && 'bg-blue-50',
                       snapshot.isDraggingOver && 'bg-green-50'
                     )}
@@ -201,22 +203,22 @@ export function CalendarView({
                     <div className="flex items-center justify-between mb-1">
                       <span
                         className={cn(
-                          'text-sm font-medium',
+                          'text-xs md:text-sm font-medium',
                           isToday
-                            ? 'bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs'
+                            ? 'bg-blue-600 text-white w-5 h-5 md:w-6 md:h-6 rounded-full flex items-center justify-center text-xs'
                             : 'text-gray-900'
                         )}
                       >
                         {format(day, 'd')}
                       </span>
                       {dayTasks.length > 0 && (
-                        <span className="text-xs text-gray-500">
+                        <span className="text-[10px] md:text-xs text-gray-500">
                           {dayTasks.length}
                         </span>
                       )}
                     </div>
 
-                    <div className="space-y-1 overflow-y-auto max-h-[80px]">
+                    <div className="space-y-0.5 md:space-y-1 overflow-y-auto max-h-[60px] md:max-h-[80px]">
                       {dayTasks.slice(0, 3).map((task, index) => (
                         <Draggable
                           key={task.id}
@@ -230,7 +232,7 @@ export function CalendarView({
                               {...provided.draggableProps}
                               {...provided.dragHandleProps}
                               className={cn(
-                                'text-xs p-1.5 rounded group relative',
+                                'text-[10px] md:text-xs p-1 md:p-1.5 rounded group relative',
                                 canDragTasks ? 'cursor-move' : 'cursor-pointer',
                                 STATUS_CONFIG[task.status].bgColor,
                                 STATUS_CONFIG[task.status].color,
@@ -238,14 +240,14 @@ export function CalendarView({
                               )}
                               onClick={() => onEditTask(task)}
                             >
-                              <div className="flex items-center gap-1">
+                              <div className="flex items-center gap-0.5 md:gap-1">
                                 {task.label && (
-                                  <span className="text-xs">{LABEL_CONFIG[task.label].icon}</span>
+                                  <span className="text-[10px] md:text-xs hidden md:inline">{LABEL_CONFIG[task.label].icon}</span>
                                 )}
                                 {task.priority && (
-                                  <span className="text-xs">{PRIORITY_CONFIG[task.priority].icon}</span>
+                                  <span className="text-[10px] md:text-xs hidden md:inline">{PRIORITY_CONFIG[task.priority].icon}</span>
                                 )}
-                                <div className="truncate font-medium flex-1">{task.title}</div>
+                                <div className="truncate font-medium flex-1 leading-tight">{task.title}</div>
                               </div>
 
                               {/* Hover actions */}
