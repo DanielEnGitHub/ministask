@@ -1,37 +1,58 @@
-import { useState } from 'react'
-import { List, Kanban, Calendar, FolderKanban, Plus, Folder, Edit, Trash2, Moon, Sun, LogOut, User, Users, Menu, X } from 'lucide-react'
-import { Link, useLocation } from 'react-router-dom'
-import { cn } from '@/lib/utils'
-import { Button } from './ui/button'
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion'
-import type { Project, Task } from '@/lib/types'
-import { useConfirm } from '@/hooks/useConfirm'
-import { useAuth } from '@/contexts/AuthContext'
-import { usePermissions } from '@/hooks/usePermissions'
+import { useState } from "react";
+import {
+  List,
+  Kanban,
+  Calendar,
+  FolderKanban,
+  Plus,
+  Folder,
+  Edit,
+  Trash2,
+  Moon,
+  Sun,
+  LogOut,
+  User,
+  Users,
+  Menu,
+  X,
+} from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
+import { cn } from "@/lib/utils";
+import { Button } from "./ui/button";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "./ui/accordion";
+import type { Project, Task } from "@/lib/types";
+import { useConfirm } from "@/hooks/useConfirm";
+import { useAuth } from "@/contexts/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
 
-export type ViewType = 'list' | 'kanban' | 'calendar'
+export type ViewType = "list" | "kanban" | "calendar";
 
 interface LayoutProps {
-  currentView: ViewType
-  onViewChange: (view: ViewType) => void
-  onNewTask: () => void
-  onNewProject: () => void
-  children: React.ReactNode
+  currentView: ViewType;
+  onViewChange: (view: ViewType) => void;
+  onNewTask: () => void;
+  onNewProject: () => void;
+  children: React.ReactNode;
   taskCounts?: {
-    created: number
-    in_progress: number
-    paused: number
-    cancelled: number
-    completed: number
-  }
-  projects?: Project[]
-  tasks?: Task[]
-  selectedProjectId?: string | null
-  onSelectProject?: (projectId: string | null) => void
-  onEditProject?: (project: Project) => void
-  onDeleteProject?: (projectId: string) => void
-  theme?: 'light' | 'dark'
-  onToggleTheme?: () => void
+    created: number;
+    in_progress: number;
+    paused: number;
+    cancelled: number;
+    completed: number;
+  };
+  projects?: Project[];
+  tasks?: Task[];
+  selectedProjectId?: string | null;
+  onSelectProject?: (projectId: string | null) => void;
+  onEditProject?: (project: Project) => void;
+  onDeleteProject?: (projectId: string) => void;
+  theme?: "light" | "dark";
+  onToggleTheme?: () => void;
 }
 
 export function Layout({
@@ -46,46 +67,46 @@ export function Layout({
   onSelectProject,
   onEditProject,
   onDeleteProject,
-  theme = 'light',
+  theme = "light",
   onToggleTheme,
 }: LayoutProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(false) // Cerrado por defecto en móvil
-  const { confirm, ConfirmDialog } = useConfirm()
-  const { profile, signOut } = useAuth()
-  const permissions = usePermissions()
-  const location = useLocation()
+  const [sidebarOpen, setSidebarOpen] = useState(false); // Cerrado por defecto en móvil
+  const { confirm, ConfirmDialog } = useConfirm();
+  const { profile, signOut } = useAuth();
+  const permissions = usePermissions();
+  const location = useLocation();
 
   const handleSignOut = async () => {
     const confirmed = await confirm({
-      title: 'Cerrar sesión',
-      description: '¿Estás seguro de que quieres cerrar sesión?',
-      confirmText: 'Cerrar sesión',
-      cancelText: 'Cancelar',
-      variant: 'default',
-    })
+      title: "Cerrar sesión",
+      description: "¿Estás seguro de que quieres cerrar sesión?",
+      confirmText: "Cerrar sesión",
+      cancelText: "Cancelar",
+      variant: "default",
+    });
 
     if (confirmed) {
-      await signOut()
+      await signOut();
     }
-  }
+  };
 
   const views = [
-    { id: 'list' as ViewType, name: 'Lista', icon: List },
-    { id: 'kanban' as ViewType, name: 'Kanban', icon: Kanban },
-    { id: 'calendar' as ViewType, name: 'Cronograma', icon: Calendar },
-  ]
+    { id: "list" as ViewType, name: "Lista", icon: List },
+    { id: "kanban" as ViewType, name: "Kanban", icon: Kanban },
+    { id: "calendar" as ViewType, name: "Cronograma", icon: Calendar },
+  ];
 
   const totalTasks = taskCounts
     ? Object.values(taskCounts).reduce((a, b) => a + b, 0)
-    : 0
+    : 0;
 
-  const selectedProject = projects.find(p => p.id === selectedProjectId)
+  const selectedProject = projects.find((p) => p.id === selectedProjectId);
 
   // Determinar el título del filtro activo
   const getFilterLabel = () => {
-    if (selectedProject) return selectedProject.name
-    return 'Todas'
-  }
+    if (selectedProject) return selectedProject.name;
+    return "Todas";
+  };
 
   return (
     <div className="flex h-screen bg-background">
@@ -100,13 +121,13 @@ export function Layout({
       {/* Sidebar */}
       <aside
         className={cn(
-          'bg-card border-r border-border transition-all duration-300 flex flex-col z-50',
+          "bg-card border-r border-border transition-all duration-300 flex flex-col z-50",
           // Mobile: sidebar fixed overlay
-          'fixed lg:relative inset-y-0 left-0',
+          "fixed lg:relative inset-y-0 left-0",
           // Ancho
-          'w-64',
+          "w-64",
           // Mostrar/ocultar
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+          sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
         <div className="p-4 border-b border-border">
@@ -116,9 +137,13 @@ export function Layout({
             <button
               onClick={onToggleTheme}
               className="ml-auto p-2 rounded-lg hover:bg-accent transition-colors"
-              title={theme === 'light' ? 'Cambiar a modo oscuro' : 'Cambiar a modo claro'}
+              title={
+                theme === "light"
+                  ? "Cambiar a modo oscuro"
+                  : "Cambiar a modo claro"
+              }
             >
-              {theme === 'light' ? (
+              {theme === "light" ? (
                 <Moon className="h-4 w-4 text-muted-foreground" />
               ) : (
                 <Sun className="h-4 w-4 text-muted-foreground" />
@@ -134,7 +159,7 @@ export function Layout({
                   {profile.full_name || profile.email}
                 </p>
                 <p className="text-[10px] text-muted-foreground capitalize">
-                  {profile.role === 'admin' ? 'Admin' : 'Cliente'}
+                  {profile.role === "admin" ? "Admin" : "Cliente"}
                 </p>
               </div>
               <button
@@ -159,7 +184,9 @@ export function Layout({
             {permissions.canViewAllUsers && (
               <Link to="/users" className="block">
                 <Button
-                  variant={location.pathname === '/users' ? 'default' : 'outline'}
+                  variant={
+                    location.pathname === "/users" ? "default" : "outline"
+                  }
                   className="w-full"
                   size="sm"
                 >
@@ -171,197 +198,200 @@ export function Layout({
           </div>
 
           <div className="flex-1 overflow-y-auto space-y-2">
-            <Accordion type="multiple" className="space-y-2" defaultValue={['proyectos', 'vistas']}>
-            {/* Proyectos */}
-            <AccordionItem value="proyectos" className="border-none">
-              <AccordionTrigger className="text-xs font-semibold text-muted-foreground uppercase px-3 py-2 hover:no-underline hover:bg-accent rounded-lg">
-                <div className="flex items-center justify-between w-full pr-2">
-                  <span>Proyectos</span>
-                  {permissions.canCreateProject && (
-                    <span
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        onNewProject()
-                      }}
-                      className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                      title="Nuevo Proyecto"
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.stopPropagation()
-                          onNewProject()
-                        }
-                      }}
-                    >
-                      <Plus className="h-3 w-3" />
-                    </span>
-                  )}
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="space-y-1 pt-2">
-                {projects.length === 0 ? (
-                  permissions.canCreateProject ? (
-                    <Button onClick={onNewProject} variant="outline" className="w-full" size="sm">
-                      <Folder className="h-4 w-4 mr-2" />
-                      Crear Proyecto
-                    </Button>
+            <Accordion
+              type="multiple"
+              className="space-y-2"
+              defaultValue={["proyectos", "vistas"]}
+            >
+              {/* Proyectos */}
+              <AccordionItem value="proyectos" className="border-none">
+                <AccordionTrigger className="text-xs font-semibold text-muted-foreground uppercase px-3 py-2 hover:no-underline hover:bg-accent rounded-lg">
+                  <div className="flex items-center justify-between w-full pr-2">
+                    <span>Proyectos</span>
+                    {permissions.canCreateProject && (
+                      <span
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onNewProject();
+                        }}
+                        className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                        title="Nuevo Proyecto"
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.stopPropagation();
+                            onNewProject();
+                          }
+                        }}
+                      >
+                        <Plus className="h-3 w-3" />
+                      </span>
+                    )}
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="space-y-1 pt-2">
+                  {projects.length === 0 ? (
+                    permissions.canCreateProject ? (
+                      <Button
+                        onClick={onNewProject}
+                        variant="outline"
+                        className="w-full"
+                        size="sm"
+                      >
+                        <Folder className="h-4 w-4 mr-2" />
+                        Crear Proyecto
+                      </Button>
+                    ) : (
+                      <p className="text-xs text-muted-foreground px-3 py-2">
+                        No hay proyectos disponibles
+                      </p>
+                    )
                   ) : (
-                    <p className="text-xs text-muted-foreground px-3 py-2">
-                      No hay proyectos disponibles
-                    </p>
-                  )
-                ) : (
-                  <>
+                    <>
+                      <button
+                        onClick={() => onSelectProject?.(null)}
+                        className={cn(
+                          "w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-colors",
+                          !selectedProjectId
+                            ? "bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+                            : "text-muted-foreground hover:bg-accent"
+                        )}
+                      >
+                        <FolderKanban className="h-4 w-4" />
+                        Todos los proyectos
+                      </button>
+
+                      {projects.map((project) => (
+                        <div key={project.id} className="group relative">
+                          <button
+                            onClick={() => onSelectProject?.(project.id)}
+                            className={cn(
+                              "w-full flex items-center gap-2 px-3 py-2 pr-20 rounded-xl text-sm font-medium transition-colors",
+                              selectedProjectId === project.id
+                                ? "bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+                                : "text-muted-foreground hover:bg-accent"
+                            )}
+                          >
+                            <div
+                              className="w-3 h-3 rounded-full"
+                              style={{
+                                backgroundColor: project.color || "#3B82F6",
+                              }}
+                            />
+                            <span className="flex-1 text-left truncate">
+                              {project.name}
+                            </span>
+                          </button>
+
+                          {(permissions.canEditProject ||
+                            permissions.canDeleteProject) && (
+                            <div className="absolute right-2 top-2 hidden group-hover:flex gap-1">
+                              {permissions.canEditProject && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onEditProject?.(project);
+                                  }}
+                                  className="p-1 hover:bg-gray-200 rounded"
+                                  title="Editar"
+                                >
+                                  <Edit className="h-3 w-3" />
+                                </button>
+                              )}
+                              {permissions.canDeleteProject && (
+                                <button
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    const confirmed = await confirm({
+                                      title: "Eliminar proyecto",
+                                      description: `¿Estás seguro de que quieres eliminar el proyecto "${project.name}"? Las tareas asociadas no se eliminarán, pero se desasociarán del proyecto.`,
+                                      confirmText: "Eliminar",
+                                      cancelText: "Cancelar",
+                                      variant: "destructive",
+                                    });
+                                    if (confirmed) {
+                                      onDeleteProject?.(project.id);
+                                    }
+                                  }}
+                                  className="p-1 hover:bg-red-100 text-red-600 rounded"
+                                  title="Eliminar"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </>
+                  )}
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* Vistas */}
+              <AccordionItem value="vistas" className="border-none">
+                <AccordionTrigger className="text-xs font-semibold text-muted-foreground uppercase px-3 py-2 hover:no-underline hover:bg-accent rounded-lg">
+                  Vistas
+                </AccordionTrigger>
+                <AccordionContent className="space-y-1 pt-2">
+                  {views.map((view) => (
                     <button
-                      onClick={() => onSelectProject?.(null)}
+                      key={view.id}
+                      onClick={() => onViewChange(view.id)}
                       className={cn(
-                        'w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-colors',
-                        !selectedProjectId
-                          ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
-                          : 'text-muted-foreground hover:bg-accent'
+                        "w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-colors",
+                        currentView === view.id
+                          ? "bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+                          : "text-muted-foreground hover:bg-accent"
                       )}
                     >
-                      <FolderKanban className="h-4 w-4" />
-                      Todos los proyectos
+                      <view.icon className="h-4 w-4" />
+                      {view.name}
                     </button>
-
-                    {projects.map((project) => (
-                      <div key={project.id} className="group relative">
-                        <button
-                          onClick={() => onSelectProject?.(project.id)}
-                          className={cn(
-                            'w-full flex items-center gap-2 px-3 py-2 pr-20 rounded-xl text-sm font-medium transition-colors',
-                            selectedProjectId === project.id
-                              ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
-                              : 'text-muted-foreground hover:bg-accent'
-                          )}
-                        >
-                          <div
-                            className="w-3 h-3 rounded-full"
-                            style={{ backgroundColor: project.color || '#3B82F6' }}
-                          />
-                          <span className="flex-1 text-left truncate">{project.name}</span>
-                        </button>
-
-                        {(permissions.canEditProject || permissions.canDeleteProject) && (
-                          <div className="absolute right-2 top-2 hidden group-hover:flex gap-1">
-                            {permissions.canEditProject && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  onEditProject?.(project)
-                                }}
-                                className="p-1 hover:bg-gray-200 rounded"
-                                title="Editar"
-                              >
-                                <Edit className="h-3 w-3" />
-                              </button>
-                            )}
-                            {permissions.canDeleteProject && (
-                              <button
-                                onClick={async (e) => {
-                                  e.stopPropagation()
-                                  const confirmed = await confirm({
-                                    title: 'Eliminar proyecto',
-                                    description: `¿Estás seguro de que quieres eliminar el proyecto "${project.name}"? Las tareas asociadas no se eliminarán, pero se desasociarán del proyecto.`,
-                                    confirmText: 'Eliminar',
-                                    cancelText: 'Cancelar',
-                                    variant: 'destructive',
-                                  })
-                                  if (confirmed) {
-                                    onDeleteProject?.(project.id)
-                                  }
-                                }}
-                                className="p-1 hover:bg-red-100 text-red-600 rounded"
-                                title="Eliminar"
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </button>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </>
-                )}
-              </AccordionContent>
-            </AccordionItem>
-
-            {/* Vistas */}
-            <AccordionItem value="vistas" className="border-none">
-              <AccordionTrigger className="text-xs font-semibold text-muted-foreground uppercase px-3 py-2 hover:no-underline hover:bg-accent rounded-lg">
-                Vistas
-              </AccordionTrigger>
-              <AccordionContent className="space-y-1 pt-2">
-                {views.map((view) => (
-                  <button
-                    key={view.id}
-                    onClick={() => onViewChange(view.id)}
-                    className={cn(
-                      'w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-colors',
-                      currentView === view.id
-                        ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
-                        : 'text-muted-foreground hover:bg-accent'
-                    )}
-                  >
-                    <view.icon className="h-4 w-4" />
-                    {view.name}
-                  </button>
-                ))}
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
+                  ))}
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           </div>
 
-          {/* Resumen visual compacto */}
+          {/* Estados - Listado */}
           {taskCounts && (
-            <div className="pt-3 mt-3 border-t border-border flex-shrink-0">
-              <div className="px-2">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-[10px] font-semibold text-muted-foreground uppercase">
-                    {getFilterLabel()}
-                  </p>
-                  <p className="text-xs font-bold text-foreground">
-                    {totalTasks}
-                  </p>
+            <div className="pt-4 mt-4 border-t border-border flex-shrink-0">
+              <p className="text-xs font-semibold text-muted-foreground uppercase px-3 mb-2">
+                Estado - {getFilterLabel()}
+              </p>
+              <div className="space-y-1 text-sm px-3">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Creados</span>
+                  <span className="font-medium text-foreground">
+                    {taskCounts.created}
+                  </span>
                 </div>
-
-                {/* Grid de estadísticas */}
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-2">
-                    <div className="text-[10px] text-blue-600 dark:text-blue-400 font-medium">En Proceso</div>
-                    <div className="text-lg font-bold text-blue-700 dark:text-blue-300">{taskCounts.in_progress}</div>
-                  </div>
-                  <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-2">
-                    <div className="text-[10px] text-green-600 dark:text-green-400 font-medium">Completadas</div>
-                    <div className="text-lg font-bold text-green-700 dark:text-green-300">{taskCounts.completed}</div>
-                  </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">En Proceso</span>
+                  <span className="font-medium text-blue-600 dark:text-blue-400">
+                    {taskCounts.in_progress}
+                  </span>
                 </div>
-
-                {/* Otras estadísticas solo si hay datos */}
-                {(taskCounts.paused > 0 || taskCounts.cancelled > 0 || taskCounts.created > 0) && (
-                  <div className="flex gap-2 mt-2 text-xs">
-                    {taskCounts.created > 0 && (
-                      <div className="flex items-center gap-1">
-                        <div className="w-2 h-2 rounded-full bg-gray-400"></div>
-                        <span className="text-muted-foreground">{taskCounts.created}</span>
-                      </div>
-                    )}
-                    {taskCounts.paused > 0 && (
-                      <div className="flex items-center gap-1">
-                        <div className="w-2 h-2 rounded-full bg-yellow-400"></div>
-                        <span className="text-muted-foreground">{taskCounts.paused}</span>
-                      </div>
-                    )}
-                    {taskCounts.cancelled > 0 && (
-                      <div className="flex items-center gap-1">
-                        <div className="w-2 h-2 rounded-full bg-red-400"></div>
-                        <span className="text-muted-foreground">{taskCounts.cancelled}</span>
-                      </div>
-                    )}
-                  </div>
-                )}
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Pausados</span>
+                  <span className="font-medium text-yellow-600 dark:text-yellow-400">
+                    {taskCounts.paused}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Cancelados</span>
+                  <span className="font-medium text-red-600 dark:text-red-400">
+                    {taskCounts.cancelled}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Finalizados</span>
+                  <span className="font-medium text-green-600 dark:text-green-400">
+                    {taskCounts.completed}
+                  </span>
+                </div>
               </div>
             </div>
           )}
@@ -388,16 +418,16 @@ export function Layout({
             <h1 className="text-lg font-bold text-foreground">MiniTasks</h1>
           </div>
           <div className="ml-auto">
-            <span className="text-sm text-muted-foreground">{getFilterLabel()}</span>
+            <span className="text-sm text-muted-foreground">
+              {getFilterLabel()}
+            </span>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto">
-          {children}
-        </div>
+        <div className="flex-1 overflow-y-auto">{children}</div>
       </main>
 
       <ConfirmDialog />
     </div>
-  )
+  );
 }
