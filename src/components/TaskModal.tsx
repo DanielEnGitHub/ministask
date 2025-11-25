@@ -273,11 +273,11 @@ export function TaskModal({ open, onClose, onSave, task, projects = [], currentP
           ) : (
             <div>
               <label className="block text-sm font-medium mb-1.5">Estado</label>
-              <div className="p-2 bg-gray-50 rounded-lg">
+              <div className="p-2 bg-accent/30 rounded-lg">
                 <Badge className={cn(STATUS_CONFIG['created'].bgColor, STATUS_CONFIG['created'].color, 'border-0')}>
                   {STATUS_CONFIG['created'].label}
                 </Badge>
-                <p className="text-xs text-gray-500 mt-1">Las tareas se crean con estado "Creado"</p>
+                <p className="text-xs text-muted-foreground mt-1">Las tareas se crean con estado "Creado"</p>
               </div>
             </div>
           )}
@@ -477,7 +477,7 @@ export function TaskModal({ open, onClose, onSave, task, projects = [], currentP
                     <span
                       className={cn(
                         'flex-1 text-sm',
-                        subtask.completed && 'line-through text-gray-500'
+                        subtask.completed && 'line-through text-muted-foreground'
                       )}
                     >
                       {subtask.text}

@@ -130,7 +130,7 @@ export function CalendarView({
       <div className="p-3 md:p-6 space-y-4 md:space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <h2 className="text-xl md:text-2xl font-bold text-gray-900">
+          <h2 className="text-xl md:text-2xl font-bold text-foreground">
             {format(currentMonth, 'MMMM yyyy', { locale: es })}
           </h2>
 
@@ -156,13 +156,13 @@ export function CalendarView({
         </div>
 
         {/* Calendar Grid */}
-        <div className="border rounded-2xl overflow-hidden bg-white">
+        <div className="border rounded-2xl overflow-hidden bg-card">
         {/* Weekday headers */}
-        <div className="grid grid-cols-7 bg-gray-50 border-b">
+        <div className="grid grid-cols-7 bg-accent/50 border-b">
           {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((day, i) => (
             <div
               key={day}
-              className="p-2 md:p-3 text-center text-xs md:text-sm font-semibold text-gray-600"
+              className="p-2 md:p-3 text-center text-xs md:text-sm font-semibold text-muted-foreground"
               title={['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'][i]}
             >
               <span className="md:hidden">{day}</span>
@@ -178,7 +178,7 @@ export function CalendarView({
             (_, i) => (
               <div
                 key={`empty-${i}`}
-                className="min-h-[80px] md:min-h-[120px] border-r border-b bg-gray-50"
+                className="min-h-[80px] md:min-h-[120px] border-r border-b bg-accent/30"
               />
             )
           )}
@@ -196,8 +196,8 @@ export function CalendarView({
                     {...provided.droppableProps}
                     className={cn(
                       'min-h-[80px] md:min-h-[120px] border-r border-b p-1 md:p-2 space-y-1',
-                      isToday && 'bg-blue-50',
-                      snapshot.isDraggingOver && 'bg-green-50'
+                      isToday && 'bg-blue-50 dark:bg-blue-950/30',
+                      snapshot.isDraggingOver && 'bg-green-50 dark:bg-green-950/30'
                     )}
                   >
                     <div className="flex items-center justify-between mb-1">
@@ -206,13 +206,13 @@ export function CalendarView({
                           'text-xs md:text-sm font-medium',
                           isToday
                             ? 'bg-blue-600 text-white w-5 h-5 md:w-6 md:h-6 rounded-full flex items-center justify-center text-xs'
-                            : 'text-gray-900'
+                            : 'text-foreground'
                         )}
                       >
                         {format(day, 'd')}
                       </span>
                       {dayTasks.length > 0 && (
-                        <span className="text-[10px] md:text-xs text-gray-500">
+                        <span className="text-[10px] md:text-xs text-muted-foreground">
                           {dayTasks.length}
                         </span>
                       )}
@@ -251,13 +251,13 @@ export function CalendarView({
                               </div>
 
                               {/* Hover actions */}
-                              <div className="absolute top-0 right-0 hidden group-hover:flex gap-0.5 bg-white shadow-sm rounded border p-0.5 z-10">
+                              <div className="absolute top-0 right-0 hidden group-hover:flex gap-0.5 bg-card shadow-sm rounded border p-0.5 z-10">
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation()
                                     onEditTask(task)
                                   }}
-                                  className="p-0.5 hover:bg-gray-100 rounded"
+                                  className="p-0.5 hover:bg-accent rounded"
                                   title="Ver detalles"
                                 >
                                   <Eye className="h-3 w-3" />
@@ -276,7 +276,7 @@ export function CalendarView({
                                       onDeleteTask(task.id)
                                     }
                                   }}
-                                  className="p-0.5 hover:bg-red-50 text-red-600 rounded"
+                                  className="p-0.5 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 rounded"
                                   title="Eliminar tarea"
                                 >
                                   <Trash2 className="h-3 w-3" />
@@ -288,7 +288,7 @@ export function CalendarView({
                       ))}
                       {provided.placeholder}
                       {dayTasks.length > 3 && (
-                        <div className="text-xs text-gray-500 pl-1.5">
+                        <div className="text-xs text-muted-foreground pl-1.5">
                           +{dayTasks.length - 3} más
                         </div>
                       )}
@@ -305,7 +305,7 @@ export function CalendarView({
       {tasksWithDates.length < tasks.length && (
         <Card>
           <CardContent className="p-4">
-            <h3 className="text-sm font-semibold text-gray-600 mb-3">
+            <h3 className="text-sm font-semibold text-muted-foreground mb-3">
               Tareas sin fecha ({tasks.length - tasksWithDates.length})
             </h3>
             <div className="space-y-2">
@@ -315,7 +315,7 @@ export function CalendarView({
                 .map((task) => (
                   <div
                     key={task.id}
-                    className="flex items-center justify-between gap-2 p-2 hover:bg-gray-50 rounded-lg"
+                    className="flex items-center justify-between gap-2 p-2 hover:bg-accent/50 rounded-lg"
                   >
                     <div className="flex items-center gap-2 flex-1">
                       <Badge

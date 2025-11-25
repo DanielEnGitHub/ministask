@@ -221,7 +221,7 @@ export function TaskDetailModal({
         <div className="space-y-6 mt-4">
           {/* Estado */}
           <div>
-            <label className="block text-sm font-medium text-gray-500 mb-2">
+            <label className="block text-sm font-medium text-muted-foreground mb-2">
               Estado
             </label>
             <Badge
@@ -238,7 +238,7 @@ export function TaskDetailModal({
           {/* Etiqueta */}
           {task.label && (
             <div>
-              <label className="block text-sm font-medium text-gray-500 mb-2">
+              <label className="block text-sm font-medium text-muted-foreground mb-2">
                 Etiqueta
               </label>
               <Badge
@@ -256,7 +256,7 @@ export function TaskDetailModal({
           {/* Prioridad */}
           {task.priority && (
             <div>
-              <label className="block text-sm font-medium text-gray-500 mb-2">
+              <label className="block text-sm font-medium text-muted-foreground mb-2">
                 Prioridad
               </label>
               <Badge
@@ -274,22 +274,22 @@ export function TaskDetailModal({
           {/* Descripción */}
           {task.description && (
             <div>
-              <label className="block text-sm font-medium text-gray-500 mb-2">
+              <label className="block text-sm font-medium text-muted-foreground mb-2">
                 Descripción
               </label>
-              <p className="text-gray-700 whitespace-pre-wrap">{task.description}</p>
+              <p className="text-foreground whitespace-pre-wrap">{task.description}</p>
             </div>
           )}
 
           {/* Proyecto */}
           {project && (
             <div>
-              <label className="block text-sm font-medium text-gray-500 mb-2">
+              <label className="block text-sm font-medium text-muted-foreground mb-2">
                 Proyecto
               </label>
               <div className="flex items-center gap-2">
-                <Folder className="h-4 w-4 text-gray-400" />
-                <span className="text-gray-700">{project.name}</span>
+                <Folder className="h-4 w-4 text-muted-foreground" />
+                <span className="text-foreground">{project.name}</span>
               </div>
             </div>
           )}
@@ -299,12 +299,12 @@ export function TaskDetailModal({
             <div className="grid grid-cols-2 gap-4">
               {startDate && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-2">
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
                     Fecha Inicio
                   </label>
                   <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-gray-400" />
-                    <span className="text-gray-700">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-foreground">
                       {formatDateForDisplay(startDate)}
                     </span>
                   </div>
@@ -313,12 +313,12 @@ export function TaskDetailModal({
 
               {endDate && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-2">
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
                     Fecha Fin
                   </label>
                   <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-gray-400" />
-                    <span className="text-gray-700">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-foreground">
                       {formatDateForDisplay(endDate)}
                     </span>
                   </div>
@@ -330,26 +330,26 @@ export function TaskDetailModal({
           {/* Subtareas */}
           {task.subtasks && task.subtasks.length > 0 && (
             <div>
-              <label className="block text-sm font-medium text-gray-500 mb-2">
+              <label className="block text-sm font-medium text-muted-foreground mb-2">
                 Subtareas ({task.subtasks.filter(st => st.completed).length}/{task.subtasks.length})
               </label>
               <div className="space-y-2">
                 {task.subtasks.map((subtask) => (
                   <div
                     key={subtask.id}
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-accent/30"
                   >
                     {subtask.completed ? (
                       <CheckSquare className="h-4 w-4 text-green-600" />
                     ) : (
-                      <Square className="h-4 w-4 text-gray-400" />
+                      <Square className="h-4 w-4 text-muted-foreground" />
                     )}
                     <span
                       className={cn(
                         'text-sm',
                         subtask.completed
-                          ? 'line-through text-gray-500'
-                          : 'text-gray-700'
+                          ? 'line-through text-muted-foreground'
+                          : 'text-foreground'
                       )}
                     >
                       {subtask.text}
@@ -388,26 +388,26 @@ export function TaskDetailModal({
               {showViews && (
                 <div className="mt-4">
                   {taskViews.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500 text-sm bg-gray-50 rounded-lg">
-                      <Eye className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                    <div className="text-center py-8 text-muted-foreground text-sm bg-accent/30 rounded-lg">
+                      <Eye className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
                       <p>Nadie ha visto esta tarea aún</p>
                     </div>
                   ) : (
-                    <div className="space-y-2 max-h-60 overflow-y-auto border rounded-lg p-3 bg-gray-50">
+                    <div className="space-y-2 max-h-60 overflow-y-auto border rounded-lg p-3 bg-accent/30">
                       {taskViews
                         .sort((a: any, b: any) => new Date(b.viewedAt).getTime() - new Date(a.viewedAt).getTime())
                         .map((view: any) => (
                           <div
                             key={view.id}
-                            className="flex items-center justify-between p-2 bg-white rounded-lg text-sm hover:bg-blue-50 transition-colors"
+                            className="flex items-center justify-between p-2 bg-card rounded-lg text-sm hover:bg-blue-50 transition-colors"
                           >
                             <div className="flex items-center gap-2">
                               <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
                                 <Eye className="h-4 w-4 text-blue-600" />
                               </div>
-                              <span className="font-medium text-gray-700">{view.userName}</span>
+                              <span className="font-medium text-foreground">{view.userName}</span>
                             </div>
-                            <span className="text-xs text-gray-500">
+                            <span className="text-xs text-muted-foreground">
                               {new Date(view.viewedAt).toLocaleString('es-ES', {
                                 year: 'numeric',
                                 month: '2-digit',
@@ -428,8 +428,8 @@ export function TaskDetailModal({
           {/* Sección de Comentarios */}
           <div className="border-t pt-6">
             <div className="flex items-center gap-2 mb-4">
-              <MessageSquare className="h-5 w-5 text-gray-600" />
-              <h3 className="text-lg font-semibold text-gray-900">
+              <MessageSquare className="h-5 w-5 text-muted-foreground" />
+              <h3 className="text-lg font-semibold text-foreground">
                 Comentarios
                 {comments.length > 0 && (
                   <Badge variant="secondary" className="ml-2">
@@ -454,7 +454,7 @@ export function TaskDetailModal({
                 }}
               />
               <div className="flex justify-between items-center">
-                <span className="text-xs text-gray-500">Ctrl + Enter para enviar</span>
+                <span className="text-xs text-muted-foreground">Ctrl + Enter para enviar</span>
                 <Button
                   onClick={handleAddComment}
                   disabled={!newComment.trim()}
@@ -472,8 +472,8 @@ export function TaskDetailModal({
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
               </div>
             ) : comments.length === 0 ? (
-              <div className="text-center py-8 text-gray-500 text-sm bg-gray-50 rounded-lg">
-                <MessageSquare className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+              <div className="text-center py-8 text-muted-foreground text-sm bg-accent/30 rounded-lg">
+                <MessageSquare className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
                 <p>No hay comentarios aún. ¡Sé el primero en comentar!</p>
               </div>
             ) : (
@@ -536,7 +536,7 @@ function CommentItem({
 
   return (
     <div className={cn('space-y-3', depth > 0 && 'ml-8 border-l-2 border-gray-200 pl-4')}>
-      <div className="bg-gray-50 rounded-lg p-4">
+      <div className="bg-accent/30 rounded-lg p-4">
         <div className="flex items-start justify-between gap-2 mb-2">
           <div className="flex items-center gap-2">
             <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
@@ -545,8 +545,8 @@ function CommentItem({
               </span>
             </div>
             <div>
-              <p className="text-sm font-semibold text-gray-900">{comment.userName}</p>
-              <p className="text-xs text-gray-500">
+              <p className="text-sm font-semibold text-foreground">{comment.userName}</p>
+              <p className="text-xs text-muted-foreground">
                 {new Date(comment.createdAt).toLocaleString('es-ES', {
                   year: 'numeric',
                   month: '2-digit',
@@ -569,7 +569,7 @@ function CommentItem({
           )}
         </div>
 
-        <p className="text-sm text-gray-700 whitespace-pre-wrap mb-3">{comment.text}</p>
+        <p className="text-sm text-foreground whitespace-pre-wrap mb-3">{comment.text}</p>
 
         {depth < maxDepth && (
           <Button

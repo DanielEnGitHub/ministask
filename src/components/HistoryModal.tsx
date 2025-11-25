@@ -42,7 +42,7 @@ export function HistoryModal({ open, onClose, tasks, projects = [], onEditTask }
       <DialogContent className="max-w-4xl max-h-[80vh]">
         <DialogHeader>
           <DialogTitle>Historial de Tareas</DialogTitle>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             Todas las tareas creadas ordenadas por fecha
           </p>
         </DialogHeader>
@@ -50,7 +50,7 @@ export function HistoryModal({ open, onClose, tasks, projects = [], onEditTask }
         <div className="mt-4 overflow-y-auto max-h-[60vh] space-y-3">
           {sortedTasks.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-gray-500">No hay tareas creadas</p>
+              <p className="text-muted-foreground">No hay tareas creadas</p>
             </div>
           ) : (
             sortedTasks.map((task) => {
@@ -63,12 +63,12 @@ export function HistoryModal({ open, onClose, tasks, projects = [], onEditTask }
                     onEditTask(task)
                     onClose()
                   }}
-                  className="border rounded-xl p-4 hover:bg-gray-50 cursor-pointer transition-colors"
+                  className="border rounded-xl p-4 hover:bg-accent/30 cursor-pointer transition-colors"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-2">
-                        <h3 className="font-medium text-gray-900 truncate">
+                        <h3 className="font-medium text-foreground truncate">
                           {task.title}
                         </h3>
                         <Badge
@@ -83,12 +83,12 @@ export function HistoryModal({ open, onClose, tasks, projects = [], onEditTask }
                       </div>
 
                       {task.description && (
-                        <p className="text-sm text-gray-600 mb-2 line-clamp-2">
+                        <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
                           {task.description}
                         </p>
                       )}
 
-                      <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
+                      <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
                           <span>{formatDate(task.createdAt)}</span>
@@ -117,7 +117,7 @@ export function HistoryModal({ open, onClose, tasks, projects = [], onEditTask }
 
         {sortedTasks.length > 0 && (
           <div className="border-t pt-4 mt-4">
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted-foreground">
               Total: {sortedTasks.length} {sortedTasks.length === 1 ? 'tarea' : 'tareas'}
             </p>
           </div>

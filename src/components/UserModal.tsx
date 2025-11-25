@@ -135,7 +135,7 @@ export function UserModal({ open, onClose, onSave, user, onUserCreated }: UserMo
                 disabled
                 className="bg-gray-100"
               />
-              <p className="text-xs text-gray-500">El email no se puede modificar</p>
+              <p className="text-xs text-muted-foreground">El email no se puede modificar</p>
             </div>
           )}
 
@@ -167,7 +167,7 @@ export function UserModal({ open, onClose, onSave, user, onUserCreated }: UserMo
                 <SelectItem value="admin">Administrador</SelectItem>
               </SelectContent>
             </Select>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-muted-foreground">
               {role === 'admin'
                 ? 'Acceso completo a todos los proyectos y tareas'
                 : 'Solo puede ver proyectos asignados'}

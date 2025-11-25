@@ -77,10 +77,10 @@ export function KanbanView({
                       STATUS_CONFIG[status].bgColor
                     )}
                   />
-                  <h3 className="font-semibold text-gray-900">
+                  <h3 className="font-semibold text-foreground">
                     {STATUS_CONFIG[status].label}
                   </h3>
-                  <span className="text-sm text-gray-500">
+                  <span className="text-sm text-muted-foreground">
                     ({tasksByStatus[status].length})
                   </span>
                 </div>
@@ -94,8 +94,8 @@ export function KanbanView({
                     className={cn(
                       'space-y-3 p-3 rounded-2xl min-h-[200px] transition-colors',
                       snapshot.isDraggingOver
-                        ? 'bg-blue-50 border-2 border-blue-300 border-dashed'
-                        : 'bg-gray-100'
+                        ? 'bg-blue-50 dark:bg-blue-950/30 border-2 border-blue-300 dark:border-blue-700 border-dashed'
+                        : 'bg-accent/50'
                     )}
                   >
                     {tasksByStatus[status].map((task, index) => (
@@ -122,7 +122,7 @@ export function KanbanView({
                               <div className="space-y-3">
                                 <div className="flex items-start justify-between gap-2">
                                   <div className="flex-1 space-y-2">
-                                    <h4 className="font-medium text-gray-900">
+                                    <h4 className="font-medium text-card-foreground">
                                       {task.title}
                                     </h4>
                                     <div className="flex gap-2 flex-wrap">
@@ -190,14 +190,14 @@ export function KanbanView({
                                 </div>
 
                                 {task.description && (
-                                  <p className="text-sm text-gray-600 line-clamp-2">
+                                  <p className="text-sm text-muted-foreground line-clamp-2">
                                     {task.description}
                                   </p>
                                 )}
 
                                 <div className="space-y-2">
                                   {task.subtasks && task.subtasks.length > 0 && (
-                                    <div className="flex items-center gap-1 text-xs text-gray-500">
+                                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
                                       <CheckSquare className="h-3 w-3" />
                                       <span>
                                         {getCompletedSubtasks(task)} subtareas
@@ -209,7 +209,7 @@ export function KanbanView({
                                     const startDate = getTaskStartDate(task)
                                     const endDate = getTaskEndDate(task)
                                     return (startDate || endDate) && (
-                                      <div className="flex items-center gap-1 text-xs text-gray-500">
+                                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
                                         <Calendar className="h-3 w-3" />
                                         <span>
                                           {startDate && formatDateForDisplay(startDate)}

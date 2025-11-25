@@ -34,7 +34,7 @@ export function AlertDialogContent({
   return (
     <div
       className={cn(
-        'bg-white rounded-2xl shadow-2xl p-6 space-y-4',
+        'bg-card rounded-2xl shadow-2xl p-6 space-y-4',
         className
       )}
       {...props}
@@ -63,7 +63,7 @@ export function AlertDialogTitle({
 }: React.HTMLAttributes<HTMLHeadingElement>) {
   return (
     <h2
-      className={cn('text-lg font-semibold text-gray-900', className)}
+      className={cn('text-lg font-semibold text-foreground', className)}
       {...props}
     >
       {children}
@@ -78,7 +78,7 @@ export function AlertDialogDescription({
 }: React.HTMLAttributes<HTMLParagraphElement>) {
   return (
     <p
-      className={cn('text-sm text-gray-600', className)}
+      className={cn('text-sm text-muted-foreground', className)}
       {...props}
     >
       {children}
@@ -112,7 +112,7 @@ export function AlertDialogCancel({
       onClick={onClick}
       className={cn(
         'px-4 py-2 rounded-xl text-sm font-medium',
-        'bg-gray-100 text-gray-700 hover:bg-gray-200',
+        'bg-accent text-accent-foreground hover:bg-accent/80',
         'transition-colors',
         className
       )}

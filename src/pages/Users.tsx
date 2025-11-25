@@ -134,16 +134,16 @@ export function Users() {
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando usuarios...</p>
+          <p className="text-muted-foreground">Cargando usuarios...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-accent/30">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-card border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -155,8 +155,8 @@ export function Users() {
               <div className="flex items-center gap-3">
                 <UsersIcon className="h-8 w-8 text-blue-600" />
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Gestión de Usuarios</h1>
-                  <p className="text-sm text-gray-500">Administra usuarios y asigna proyectos</p>
+                  <h1 className="text-2xl font-bold text-foreground">Gestión de Usuarios</h1>
+                  <p className="text-sm text-muted-foreground">Administra usuarios y asigna proyectos</p>
                 </div>
               </div>
             </div>
@@ -173,9 +173,9 @@ export function Users() {
         {users.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center">
-              <UsersIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No hay usuarios</h3>
-              <p className="text-sm text-gray-500 mb-4">
+              <UsersIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-foreground mb-2">No hay usuarios</h3>
+              <p className="text-sm text-muted-foreground mb-4">
                 Comienza creando tu primer usuario
               </p>
               <Button onClick={handleNewUser}>
@@ -199,7 +199,7 @@ export function Users() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-2">
-                          <h3 className="text-lg font-semibold text-gray-900 truncate">
+                          <h3 className="text-lg font-semibold text-foreground truncate">
                             {userItem.email}
                           </h3>
                           <Badge
@@ -212,7 +212,7 @@ export function Users() {
                             {userItem.role === 'admin' ? 'Admin' : 'Cliente'}
                           </Badge>
                         </div>
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <FolderKanban className="h-4 w-4" />
                           <span>
                             {userItem.project_count || 0} {userItem.project_count === 1 ? 'proyecto' : 'proyectos'} asignado{userItem.project_count === 1 ? '' : 's'}
@@ -257,7 +257,7 @@ export function Users() {
                   {/* Assigned Projects */}
                   {userItem.assigned_projects && userItem.assigned_projects.length > 0 && (
                     <div className="mt-4 pt-4 border-t border-gray-100">
-                      <p className="text-xs font-medium text-gray-500 mb-2">Proyectos asignados:</p>
+                      <p className="text-xs font-medium text-muted-foreground mb-2">Proyectos asignados:</p>
                       <div className="flex flex-wrap gap-2">
                         {userItem.assigned_projects.map((project) => (
                           <Badge key={project.id} variant="outline" className="text-xs">

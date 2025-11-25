@@ -82,7 +82,7 @@ export function AssignProjectsModal({
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Quick actions */}
           <div className="flex items-center justify-between pb-2 border-b">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-muted-foreground">
               {selectedProjects.length} de {projects.length} proyectos seleccionados
             </p>
             <div className="flex gap-2">
@@ -110,9 +110,9 @@ export function AssignProjectsModal({
           {/* Projects list */}
           {projects.length === 0 ? (
             <div className="text-center py-8">
-              <FolderKanban className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-              <p className="text-sm text-gray-500">No hay proyectos disponibles</p>
-              <p className="text-xs text-gray-400 mt-1">
+              <FolderKanban className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+              <p className="text-sm text-muted-foreground">No hay proyectos disponibles</p>
+              <p className="text-xs text-muted-foreground mt-1">
                 Crea un proyecto primero para poder asignarlo
               </p>
             </div>
@@ -122,7 +122,7 @@ export function AssignProjectsModal({
                 {projects.map((project) => (
                   <div
                     key={project.id}
-                    className="flex items-start gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+                    className="flex items-start gap-3 p-3 rounded-lg border border-gray-200 hover:bg-accent/30 transition-colors"
                   >
                     <Checkbox
                       id={`project-${project.id}`}
@@ -133,7 +133,7 @@ export function AssignProjectsModal({
                     <div className="flex-1">
                       <Label
                         htmlFor={`project-${project.id}`}
-                        className="font-medium text-gray-900 cursor-pointer"
+                        className="font-medium text-foreground cursor-pointer"
                       >
                         <div className="flex items-center gap-2">
                           <div
@@ -144,7 +144,7 @@ export function AssignProjectsModal({
                         </div>
                       </Label>
                       {project.description && (
-                        <p className="text-sm text-gray-500 mt-1">
+                        <p className="text-sm text-muted-foreground mt-1">
                           {project.description}
                         </p>
                       )}

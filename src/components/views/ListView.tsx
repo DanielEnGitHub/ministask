@@ -43,7 +43,7 @@ export function ListView({ tasks, onEditTask, onDeleteTask }: ListViewProps) {
     <div className="p-3 md:p-6 space-y-4 md:space-y-6">
       {/* Header con búsqueda */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
@@ -53,7 +53,7 @@ export function ListView({ tasks, onEditTask, onDeleteTask }: ListViewProps) {
       </div>
 
       {/* Resultados */}
-      <div className="text-sm text-gray-600">
+      <div className="text-sm text-muted-foreground">
         Mostrando {filteredTasks.length} de {tasks.length} tareas
       </div>
 
@@ -62,7 +62,7 @@ export function ListView({ tasks, onEditTask, onDeleteTask }: ListViewProps) {
         {filteredTasks.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center">
-              <p className="text-gray-500">No se encontraron tareas</p>
+              <p className="text-muted-foreground">No se encontraron tareas</p>
             </CardContent>
           </Card>
         ) : (
@@ -110,12 +110,12 @@ export function ListView({ tasks, onEditTask, onDeleteTask }: ListViewProps) {
                     </div>
 
                     {task.description && (
-                      <p className="text-sm text-gray-600 line-clamp-2">
+                      <p className="text-sm text-muted-foreground line-clamp-2">
                         {task.description}
                       </p>
                     )}
 
-                    <div className="flex items-center gap-4 text-xs text-gray-500">
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
                       {task.subtasks && task.subtasks.length > 0 && (
                         <div className="flex items-center gap-1">
                           <CheckSquare className="h-3 w-3" />
@@ -165,7 +165,7 @@ export function ListView({ tasks, onEditTask, onDeleteTask }: ListViewProps) {
                             onDeleteTask(task.id)
                           }
                         }}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
                         title="Eliminar tarea"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -188,8 +188,8 @@ export function ListView({ tasks, onEditTask, onDeleteTask }: ListViewProps) {
                         />
                         <span
                           className={cn(
-                            'text-sm',
-                            subtask.completed && 'line-through text-gray-500'
+                            'text-sm text-foreground',
+                            subtask.completed && 'line-through text-muted-foreground'
                           )}
                         >
                           {subtask.text}
@@ -197,7 +197,7 @@ export function ListView({ tasks, onEditTask, onDeleteTask }: ListViewProps) {
                       </div>
                     ))}
                     {task.subtasks.length > 3 && (
-                      <p className="text-xs text-gray-500 pl-6">
+                      <p className="text-xs text-muted-foreground pl-6">
                         +{task.subtasks.length - 3} más
                       </p>
                     )}
