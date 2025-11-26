@@ -1,30 +1,35 @@
-import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd'
-import { Eye, Trash2, CheckSquare, Calendar } from 'lucide-react'
-import { Button } from '../ui/button'
-import { Card, CardContent } from '../ui/card'
-import { Badge } from '../ui/badge'
-import type { Task, TaskStatus } from '@/lib/types'
-import { STATUS_CONFIG, LABEL_CONFIG, PRIORITY_CONFIG } from '@/lib/types'
-import { cn } from '@/lib/utils'
-import { useConfirm } from '@/hooks/useConfirm'
-import { usePermissions } from '@/hooks/usePermissions'
-import { getTaskStartDate, getTaskEndDate } from '@/lib/taskUtils'
-import { formatDateForDisplay } from '@/lib/dateUtils'
+import {
+  DragDropContext,
+  Droppable,
+  Draggable,
+  type DropResult,
+} from "@hello-pangea/dnd";
+import { Eye, Trash2, CheckSquare, Calendar } from "lucide-react";
+import { Button } from "../ui/button";
+import { Card, CardContent } from "../ui/card";
+import { Badge } from "../ui/badge";
+import type { Task, TaskStatus } from "@/lib/types";
+import { STATUS_CONFIG, LABEL_CONFIG, PRIORITY_CONFIG } from "@/lib/types";
+import { cn } from "@/lib/utils";
+import { useConfirm } from "@/hooks/useConfirm";
+import { usePermissions } from "@/hooks/usePermissions";
+import { getTaskStartDate, getTaskEndDate } from "@/lib/taskUtils";
+import { formatDateForDisplay } from "@/lib/dateUtils";
 
 interface KanbanViewProps {
-  tasks: Task[]
-  onEditTask: (task: Task) => void
-  onDeleteTask: (taskId: string) => void
-  onUpdateTaskStatus: (taskId: string, newStatus: TaskStatus) => void
+  tasks: Task[];
+  onEditTask: (task: Task) => void;
+  onDeleteTask: (taskId: string) => void;
+  onUpdateTaskStatus: (taskId: string, newStatus: TaskStatus) => void;
 }
 
 const STATUS_ORDER: TaskStatus[] = [
-  'created',
-  'in_progress',
-  'paused',
-  'cancelled',
-  'completed',
-]
+  "created",
+  "in_progress",
+  "paused",
+  "cancelled",
+  "completed",
+];
 
 export function KanbanView({
   tasks,
@@ -32,36 +37,36 @@ export function KanbanView({
   onDeleteTask,
   onUpdateTaskStatus,
 }: KanbanViewProps) {
-  const { confirm, ConfirmDialog } = useConfirm()
-  const permissions = usePermissions()
+  const { confirm, ConfirmDialog } = useConfirm();
+  const permissions = usePermissions();
 
   const tasksByStatus = STATUS_ORDER.reduce((acc, status) => {
-    acc[status] = tasks.filter((task) => task.status === status)
-    return acc
-  }, {} as Record<TaskStatus, Task[]>)
+    acc[status] = tasks.filter((task) => task.status === status);
+    return acc;
+  }, {} as Record<TaskStatus, Task[]>);
 
   const handleDragEnd = (result: DropResult) => {
-    const { destination, draggableId, source } = result
+    const { destination, draggableId, source } = result;
 
-    if (!destination) return
+    if (!destination) return;
 
-    const newStatus = destination.droppableId as TaskStatus
-    const currentStatus = source.droppableId as TaskStatus
+    const newStatus = destination.droppableId as TaskStatus;
+    const currentStatus = source.droppableId as TaskStatus;
 
     // Verificar si el usuario tiene permiso para cambiar de este estado al nuevo
     if (!permissions.canChangeTaskStatusTo(currentStatus, newStatus)) {
-      alert('No tienes permiso para cambiar esta tarea a ese estado')
-      return
+      alert("No tienes permiso para cambiar esta tarea a ese estado");
+      return;
     }
 
-    onUpdateTaskStatus(draggableId, newStatus)
-  }
+    onUpdateTaskStatus(draggableId, newStatus);
+  };
 
   const getCompletedSubtasks = (task: Task) => {
-    if (!task.subtasks || task.subtasks.length === 0) return null
-    const completed = task.subtasks.filter((st) => st.completed).length
-    return `${completed}/${task.subtasks.length}`
-  }
+    if (!task.subtasks || task.subtasks.length === 0) return null;
+    const completed = task.subtasks.filter((st) => st.completed).length;
+    return `${completed}/${task.subtasks.length}`;
+  };
 
   return (
     <div className="p-3 md:p-6 h-full overflow-x-auto">
@@ -73,7 +78,7 @@ export function KanbanView({
                 <div className="flex items-center gap-2">
                   <div
                     className={cn(
-                      'w-3 h-3 rounded-full',
+                      "w-3 h-3 rounded-full",
                       STATUS_CONFIG[status].bgColor
                     )}
                   />
@@ -92,122 +97,142 @@ export function KanbanView({
                     ref={provided.innerRef}
                     {...provided.droppableProps}
                     className={cn(
-                      'space-y-3 p-3 rounded-2xl min-h-[200px] transition-colors',
+                      "space-y-3 p-3 rounded-2xl min-h-[200px] transition-colors",
                       snapshot.isDraggingOver
-                        ? 'bg-blue-50 dark:bg-blue-950/30 border-2 border-blue-300 dark:border-blue-700 border-dashed'
-                        : 'bg-accent/50'
+                        ? "bg-blue-50 dark:bg-blue-950/30 border-2 border-blue-300 dark:border-blue-700 border-dashed"
+                        : "bg-accent/50"
                     )}
                   >
-                    {tasksByStatus[status].map((task, index) => (
-                      <Draggable
-                        key={task.id}
-                        draggableId={task.id}
-                        index={index}
-                        isDragDisabled={!permissions.canChangeTaskStatus}
-                      >
-                        {(provided, snapshot) => (
-                          <Card
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                            {...provided.dragHandleProps}
-                            className={cn(
-                              permissions.canChangeTaskStatus
-                                ? 'cursor-move'
-                                : 'cursor-default',
-                              'hover:shadow-md transition-shadow',
-                              snapshot.isDragging && 'shadow-lg rotate-2'
-                            )}
-                          >
-                            <CardContent className="p-3">
-                              <div className="space-y-2">
-                                <div className="flex items-start justify-between gap-2">
-                                  <div className="flex-1">
-                                    <h4 className="font-medium text-card-foreground text-sm leading-tight mb-1.5">
-                                      {task.title}
-                                    </h4>
-                                    {/* Solo mostrar badges si son importantes */}
-                                    <div className="flex gap-1.5 flex-wrap">
-                                      {task.priority && (
-                                        <span className={cn(
-                                          'text-xs flex items-center gap-0.5',
-                                          task.priority === 'alta' && 'text-red-600 dark:text-red-400',
-                                          task.priority === 'media' && 'text-yellow-600 dark:text-yellow-400',
-                                          task.priority === 'baja' && 'text-green-600 dark:text-green-400'
-                                        )}>
-                                          {PRIORITY_CONFIG[task.priority].icon}
-                                        </span>
-                                      )}
-                                      {task.label && (
-                                        <span className="text-xs text-muted-foreground">
-                                          {LABEL_CONFIG[task.label].icon}
-                                        </span>
-                                      )}
+                    {tasksByStatus[status].map((task, index) => {
+                      // Permitir arrastrar si es admin O si es cliente y la tarea está en revisión
+                      const canDrag =
+                        permissions.canChangeTaskStatus ||
+                        (permissions.isClient && task.status === "paused");
+
+                      return (
+                        <Draggable
+                          key={task.id}
+                          draggableId={task.id}
+                          index={index}
+                          isDragDisabled={!canDrag}
+                        >
+                          {(provided, snapshot) => (
+                            <Card
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              {...provided.dragHandleProps}
+                              className={cn(
+                                canDrag ? "cursor-move" : "cursor-default",
+                                "hover:shadow-md transition-shadow",
+                                snapshot.isDragging && "shadow-lg rotate-2"
+                              )}
+                            >
+                              <CardContent className="p-3">
+                                <div className="space-y-2">
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div className="flex-1">
+                                      <h4 className="font-medium text-card-foreground text-sm leading-tight mb-1.5">
+                                        {task.title}
+                                      </h4>
+                                      {/* Solo mostrar badges si son importantes */}
+                                      <div className="flex gap-1.5 flex-wrap">
+                                        {task.priority && (
+                                          <span
+                                            className={cn(
+                                              "text-xs flex items-center gap-0.5",
+                                              task.priority === "alta" &&
+                                                "text-red-600 dark:text-red-400",
+                                              task.priority === "media" &&
+                                                "text-yellow-600 dark:text-yellow-400",
+                                              task.priority === "baja" &&
+                                                "text-green-600 dark:text-green-400"
+                                            )}
+                                          >
+                                            {
+                                              PRIORITY_CONFIG[task.priority]
+                                                .icon
+                                            }
+                                          </span>
+                                        )}
+                                        {task.label && (
+                                          <span className="text-xs text-muted-foreground">
+                                            {LABEL_CONFIG[task.label].icon}
+                                          </span>
+                                        )}
+                                      </div>
                                     </div>
-                                  </div>
-                                  <div className="flex gap-1">
-                                    <Button
-                                      size="icon"
-                                      variant="ghost"
-                                      className="h-7 w-7"
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        onEditTask(task)
-                                      }}
-                                      title={permissions.canEditTask ? "Editar tarea" : "Ver detalles"}
-                                    >
-                                      <Eye className="h-3 w-3" />
-                                    </Button>
-                                    {permissions.canDeleteTask && (
+                                    <div className="flex gap-1">
                                       <Button
                                         size="icon"
                                         variant="ghost"
-                                        className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                        onClick={async (e) => {
-                                          e.stopPropagation()
-                                          const confirmed = await confirm({
-                                            title: 'Eliminar tarea',
-                                            description: `¿Estás seguro de que quieres eliminar "${task.title}"? Esta acción no se puede deshacer.`,
-                                            confirmText: 'Eliminar',
-                                            cancelText: 'Cancelar',
-                                            variant: 'destructive',
-                                          })
-                                          if (confirmed) {
-                                            onDeleteTask(task.id)
-                                          }
+                                        className="h-7 w-7"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          onEditTask(task);
                                         }}
-                                        title="Eliminar tarea"
+                                        title={
+                                          permissions.canEditTask
+                                            ? "Editar tarea"
+                                            : "Ver detalles"
+                                        }
                                       >
-                                        <Trash2 className="h-3 w-3" />
+                                        <Eye className="h-3 w-3" />
                                       </Button>
-                                    )}
+                                      {permissions.canDeleteTask && (
+                                        <Button
+                                          size="icon"
+                                          variant="ghost"
+                                          className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                          onClick={async (e) => {
+                                            e.stopPropagation();
+                                            const confirmed = await confirm({
+                                              title: "Eliminar tarea",
+                                              description: `¿Estás seguro de que quieres eliminar "${task.title}"? Esta acción no se puede deshacer.`,
+                                              confirmText: "Eliminar",
+                                              cancelText: "Cancelar",
+                                              variant: "destructive",
+                                            });
+                                            if (confirmed) {
+                                              onDeleteTask(task.id);
+                                            }
+                                          }}
+                                          title="Eliminar tarea"
+                                        >
+                                          <Trash2 className="h-3 w-3" />
+                                        </Button>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {/* Metadata compacta */}
+                                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                    {task.subtasks &&
+                                      task.subtasks.length > 0 && (
+                                        <span className="flex items-center gap-0.5">
+                                          <CheckSquare className="h-3 w-3" />
+                                          {getCompletedSubtasks(task)}
+                                        </span>
+                                      )}
+
+                                    {(() => {
+                                      const endDate = getTaskEndDate(task);
+                                      return (
+                                        endDate && (
+                                          <span className="flex items-center gap-0.5">
+                                            <Calendar className="h-3 w-3" />
+                                            {formatDateForDisplay(endDate)}
+                                          </span>
+                                        )
+                                      );
+                                    })()}
                                   </div>
                                 </div>
-
-                                {/* Metadata compacta */}
-                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                  {task.subtasks && task.subtasks.length > 0 && (
-                                    <span className="flex items-center gap-0.5">
-                                      <CheckSquare className="h-3 w-3" />
-                                      {getCompletedSubtasks(task)}
-                                    </span>
-                                  )}
-
-                                  {(() => {
-                                    const endDate = getTaskEndDate(task)
-                                    return endDate && (
-                                      <span className="flex items-center gap-0.5">
-                                        <Calendar className="h-3 w-3" />
-                                        {formatDateForDisplay(endDate)}
-                                      </span>
-                                    )
-                                  })()}
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        )}
-                      </Draggable>
-                    ))}
+                              </CardContent>
+                            </Card>
+                          )}
+                        </Draggable>
+                      );
+                    })}
                     {provided.placeholder}
                   </div>
                 )}
@@ -219,5 +244,5 @@ export function KanbanView({
 
       <ConfirmDialog />
     </div>
-  )
+  );
 }

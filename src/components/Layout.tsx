@@ -375,7 +375,7 @@ export function Layout({
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Pausados</span>
+                  <span className="text-muted-foreground">En Revisión</span>
                   <span className="font-medium text-yellow-600 dark:text-yellow-400">
                     {taskCounts.paused}
                   </span>

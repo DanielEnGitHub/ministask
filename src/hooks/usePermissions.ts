@@ -12,10 +12,10 @@
  * =====================================================
  */
 
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from "@/contexts/AuthContext";
 
 export function usePermissions() {
-  const { profile, isAdmin, isClient } = useAuth()
+  const { profile, isAdmin, isClient } = useAuth();
 
   return {
     // ============================================
@@ -95,7 +95,7 @@ export function usePermissions() {
     /**
      * Puede cambiar estado de tareas
      * Admin: Puede cambiar cualquier estado
-     * Client: Solo puede cambiar de "En Revisión" (paused) a "Finalizado" (completed)
+     * Client: Solo puede cambiar de "En Revisión" (paused) a "Finalizado" (completed) o "Cancelado" (cancelled)
      */
     canChangeTaskStatus: isAdmin,
 
@@ -106,14 +106,17 @@ export function usePermissions() {
      */
     canChangeTaskStatusTo: (currentStatus: string, newStatus: string) => {
       // Admin puede cambiar cualquier estado
-      if (isAdmin) return true
+      if (isAdmin) return true;
 
-      // Cliente solo puede cambiar de "paused" (En Revisión) a "completed" (Finalizado)
+      // Cliente solo puede cambiar de "paused" (En Revisión) a "completed" (Finalizado) o "cancelled" (Cancelado)
       if (isClient) {
-        return currentStatus === 'paused' && newStatus === 'completed'
+        return (
+          currentStatus === "paused" &&
+          (newStatus === "completed" || newStatus === "cancelled")
+        );
       }
 
-      return false
+      return false;
     },
 
     /**
@@ -160,7 +163,7 @@ export function usePermissions() {
      * Solo sus propios comentarios
      */
     canDeleteComment: (commentUserId: string) => {
-      return profile?.id === commentUserId
+      return profile?.id === commentUserId;
     },
 
     // ============================================
@@ -181,5 +184,5 @@ export function usePermissions() {
      * Es cliente
      */
     isClient,
-  }
+  };
 }
