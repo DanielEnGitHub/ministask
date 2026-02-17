@@ -3,14 +3,16 @@ import { Layout, type ViewType } from '@/components/Layout'
 import { TaskModal } from '@/components/TaskModal'
 import { TaskDetailModal } from '@/components/TaskDetailModal'
 import { ProjectModal } from '@/components/ProjectModal'
+import { SprintModal } from '@/components/SprintModal'
 import { ListView } from '@/components/views/ListView'
 import { KanbanView } from '@/components/views/KanbanView'
 import { CalendarView } from '@/components/views/CalendarView'
-import type { Task, TaskStatus, Project } from '@/lib/types'
+import type { Task, TaskStatus, Project, Sprint } from '@/lib/types'
 import { useTheme } from '@/hooks/useTheme'
 import { useAuth } from '@/contexts/AuthContext'
 import * as ProjectsService from '@/services/projects.service'
 import * as TasksService from '@/services/tasks.service'
+import * as SprintsService from '@/services/sprints.service'
 import { getTaskProjectId } from '@/lib/taskUtils'
 
 // Keys para localStorage
@@ -34,6 +36,8 @@ export function Dashboard() {
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [viewingTask, setViewingTask] = useState<Task | null>(null)
   const [editingProject, setEditingProject] = useState<Project | null>(null)
+  const [isSprintModalOpen, setIsSprintModalOpen] = useState(false)
+  const [editingSprint, setEditingSprint] = useState<Sprint | null>(null)
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.SELECTED_PROJECT)
     return saved || null
@@ -42,6 +46,7 @@ export function Dashboard() {
   // Estado para datos desde Supabase
   const [tasks, setTasks] = useState<Task[]>([])
   const [projects, setProjects] = useState<Project[]>([])
+  const [sprints, setSprints] = useState<Sprint[]>([])
   const [loading, setLoading] = useState(true)
 
   // Cargar datos iniciales desde Supabase
@@ -73,6 +78,10 @@ export function Dashboard() {
       // Cargar proyectos según rol
       const { data: projectsData } = await ProjectsService.getAllProjects(user.id, isAdmin)
       setProjects(projectsData || [])
+
+      // Cargar sprints
+      const { data: sprintsData } = await SprintsService.getAllSprints()
+      setSprints(sprintsData || [])
 
       // Cargar tareas según rol
       const { data: tasksData } = await TasksService.getAllTasks(user.id, isAdmin)
@@ -123,6 +132,85 @@ export function Dashboard() {
     setIsProjectModalOpen(true)
   }
 
+  const handleNewSprint = () => {
+    setEditingSprint(null)
+    setIsSprintModalOpen(true)
+  }
+
+  const handleEditSprint = (sprint: Sprint) => {
+    setEditingSprint(sprint)
+    setIsSprintModalOpen(true)
+  }
+
+  const handleSaveSprint = async (sprintData: Partial<Sprint>) => {
+    if (!user) return
+
+    try {
+      if (sprintData.id) {
+        const { data } = await SprintsService.updateSprint(sprintData.id, {
+          name: sprintData.name,
+          goal: sprintData.goal || undefined,
+          startDate: sprintData.start_date,
+          endDate: sprintData.end_date,
+        })
+
+        if (data) {
+          // @ts-ignore
+          setSprints(prev => prev.map(s => s.id === data.id ? data : s))
+        }
+      } else {
+        const { data } = await SprintsService.createSprint({
+          name: sprintData.name!,
+          goal: sprintData.goal || undefined,
+          startDate: sprintData.start_date!,
+          endDate: sprintData.end_date!,
+        }, user.id)
+
+        if (data) {
+          setSprints(prev => [data, ...prev])
+        }
+      }
+    } catch (error) {
+      console.error('Error saving sprint:', error)
+    }
+  }
+
+  const handleCompleteSprint = async (sprintId: string) => {
+    try {
+      const { data } = await SprintsService.completeSprint(sprintId)
+
+      if (data) {
+        // @ts-ignore
+        setSprints(prev => prev.map(s => s.id === data.id ? data : s))
+        // Recargar tareas ya que algunas fueron desasignadas
+        if (user && profile) {
+          const { data: tasksData } = await TasksService.getAllTasks(user.id, isAdmin)
+          setTasks(tasksData || [])
+        }
+      }
+    } catch (error) {
+      console.error('Error completing sprint:', error)
+    }
+  }
+
+  const handleDeleteSprint = async (sprintId: string) => {
+    try {
+      const { error } = await SprintsService.deleteSprint(sprintId)
+
+      if (!error) {
+        setSprints(prev => prev.filter(s => s.id !== sprintId))
+        // Desasignar tareas localmente
+        setTasks(prev => prev.map(t =>
+          (t as any).sprint_id === sprintId
+            ? { ...t, sprint_id: null } as Task
+            : t
+        ))
+      }
+    } catch (error) {
+      console.error('Error deleting sprint:', error)
+    }
+  }
+
   const handleSaveTask = async (taskData: Partial<Task>) => {
     if (!user) return
 
@@ -137,6 +225,8 @@ export function Dashboard() {
 
       const projectId = getTaskProjectId(taskData)
 
+      const sprintId = (taskData as any).sprintId !== undefined ? (taskData as any).sprintId : undefined
+
       if (taskData.id) {
         // Actualizar tarea existente
         const { data } = await TasksService.updateTask(taskData.id, {
@@ -146,6 +236,7 @@ export function Dashboard() {
           label: taskData.label,
           priority: taskData.priority,
           projectId,
+          sprintId,
           startDate,
           endDate,
           subtasks: taskData.subtasks,
@@ -165,6 +256,7 @@ export function Dashboard() {
           label: taskData.label,
           priority: taskData.priority,
           projectId,
+          sprintId,
           startDate,
           endDate,
           subtasks: taskData.subtasks,
@@ -322,12 +414,18 @@ export function Dashboard() {
       onSelectProject={handleSelectProject}
       onEditProject={handleEditProject}
       onDeleteProject={handleDeleteProject}
+      sprints={sprints}
+      onNewSprint={handleNewSprint}
+      onEditSprint={handleEditSprint}
+      onCompleteSprint={handleCompleteSprint}
+      onDeleteSprint={handleDeleteSprint}
       theme={theme}
       onToggleTheme={toggleTheme}
     >
       {currentView === 'list' && (
         <ListView
           tasks={filteredTasks}
+          sprints={sprints}
           onEditTask={handleViewTask}
           onDeleteTask={handleDeleteTask}
         />
@@ -336,6 +434,7 @@ export function Dashboard() {
       {currentView === 'kanban' && (
         <KanbanView
           tasks={filteredTasks}
+          sprints={sprints}
           onEditTask={handleViewTask}
           onDeleteTask={handleDeleteTask}
           onUpdateTaskStatus={handleUpdateTaskStatus}
@@ -357,6 +456,7 @@ export function Dashboard() {
         onSave={handleSaveTask}
         task={editingTask}
         projects={projects}
+        sprints={sprints}
         currentProjectId={selectedProjectId}
       />
 
@@ -365,6 +465,7 @@ export function Dashboard() {
         onClose={() => setIsTaskDetailModalOpen(false)}
         task={viewingTask}
         projects={projects}
+        sprints={sprints}
         onEdit={handleEditTask}
       />
 
@@ -373,6 +474,13 @@ export function Dashboard() {
         onClose={() => setIsProjectModalOpen(false)}
         onSave={handleSaveProject}
         project={editingProject}
+      />
+
+      <SprintModal
+        open={isSprintModalOpen}
+        onClose={() => setIsSprintModalOpen(false)}
+        onSave={handleSaveSprint}
+        sprint={editingSprint}
       />
     </Layout>
   )

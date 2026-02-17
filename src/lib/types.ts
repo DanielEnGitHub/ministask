@@ -4,6 +4,20 @@ export type TaskLabel = 'bug' | 'implementacion' | 'mejora' | 'actualizacion' | 
 
 export type TaskPriority = 'alta' | 'media' | 'baja';
 
+export type SprintStatus = 'active' | 'completed';
+
+export interface Sprint {
+  id: string;
+  name: string;
+  goal?: string | null;
+  start_date: string;
+  end_date: string;
+  status: SprintStatus;
+  created_by?: string;
+  created_at: string;
+  updated_at?: string;
+}
+
 export interface SubTask {
   id: string;
   text: string;
@@ -40,6 +54,7 @@ export interface Task {
   startDate?: Date;
   endDate?: Date;
   projectId?: string | null;
+  sprintId?: string | null;
   images?: string[]; // URLs o base64 de imágenes adjuntas
   taskViews?: TaskView[]; // Historial de vistas (solo para admins)
   createdAt: Date;
@@ -133,5 +148,18 @@ export const PRIORITY_CONFIG: Record<TaskPriority, { label: string; color: strin
     color: 'text-green-700 dark:text-green-300',
     bgColor: 'bg-green-100 dark:bg-green-900/40',
     icon: '🟢'
+  }
+};
+
+export const SPRINT_STATUS_CONFIG: Record<SprintStatus, { label: string; color: string; bgColor: string }> = {
+  active: {
+    label: 'Activo',
+    color: 'text-indigo-700 dark:text-indigo-300',
+    bgColor: 'bg-indigo-100 dark:bg-indigo-900/40'
+  },
+  completed: {
+    label: 'Completado',
+    color: 'text-green-700 dark:text-green-300',
+    bgColor: 'bg-green-100 dark:bg-green-900/40'
   }
 };

@@ -4,21 +4,22 @@ import { Input } from '../ui/input'
 import { Button } from '../ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Badge } from '../ui/badge'
-import type { Task } from '@/lib/types'
+import type { Task, Sprint } from '@/lib/types'
 import { STATUS_CONFIG, LABEL_CONFIG, PRIORITY_CONFIG } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { useConfirm } from '@/hooks/useConfirm'
 import { usePermissions } from '@/hooks/usePermissions'
-import { getTaskStartDate, getTaskEndDate } from '@/lib/taskUtils'
+import { getTaskStartDate, getTaskEndDate, getTaskSprintId } from '@/lib/taskUtils'
 import { formatDateForDisplay } from '@/lib/dateUtils'
 
 interface ListViewProps {
   tasks: Task[]
+  sprints?: Sprint[]
   onEditTask: (task: Task) => void
   onDeleteTask: (taskId: string) => void
 }
 
-export function ListView({ tasks, onEditTask, onDeleteTask }: ListViewProps) {
+export function ListView({ tasks, sprints = [], onEditTask, onDeleteTask }: ListViewProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const { confirm, ConfirmDialog } = useConfirm()
   const permissions = usePermissions()
@@ -107,6 +108,15 @@ export function ListView({ tasks, onEditTask, onDeleteTask }: ListViewProps) {
                           <span>{LABEL_CONFIG[task.label].label}</span>
                         </span>
                       )}
+                      {(() => {
+                        const sprintId = getTaskSprintId(task)
+                        const sprint = sprintId ? sprints.find(s => s.id === sprintId) : null
+                        return sprint ? (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300">
+                            {sprint.name}
+                          </span>
+                        ) : null
+                      })()}
                       {task.subtasks && task.subtasks.length > 0 && (
                         <span className="flex items-center gap-1">
                           <CheckSquare className="h-3 w-3" />

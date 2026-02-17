@@ -95,6 +95,41 @@ export interface Database {
           assigned_at?: string
         }
       }
+      sprints: {
+        Row: {
+          id: string
+          name: string
+          goal: string | null
+          start_date: string
+          end_date: string
+          status: 'active' | 'completed'
+          created_by: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          goal?: string | null
+          start_date: string
+          end_date: string
+          status?: 'active' | 'completed'
+          created_by: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          goal?: string | null
+          start_date?: string
+          end_date?: string
+          status?: 'active' | 'completed'
+          created_by?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
       tasks: {
         Row: {
           id: string
@@ -103,6 +138,7 @@ export interface Database {
           status: 'created' | 'in_progress' | 'paused' | 'cancelled' | 'completed'
           label: 'bug' | 'implementacion' | 'mejora' | 'actualizacion' | 'otro' | null
           project_id: string
+          sprint_id: string | null
           start_date: string | null
           end_date: string | null
           subtasks: Json
@@ -118,6 +154,7 @@ export interface Database {
           status?: 'created' | 'in_progress' | 'paused' | 'cancelled' | 'completed'
           label?: 'bug' | 'implementacion' | 'mejora' | 'actualizacion' | 'otro' | null
           project_id: string
+          sprint_id?: string | null
           start_date?: string | null
           end_date?: string | null
           subtasks?: Json
@@ -133,6 +170,7 @@ export interface Database {
           status?: 'created' | 'in_progress' | 'paused' | 'cancelled' | 'completed'
           label?: 'bug' | 'implementacion' | 'mejora' | 'actualizacion' | 'otro' | null
           project_id?: string
+          sprint_id?: string | null
           start_date?: string | null
           end_date?: string | null
           subtasks?: Json
@@ -176,6 +214,7 @@ export interface Database {
       user_role: 'admin' | 'client'
       task_status: 'created' | 'in_progress' | 'paused' | 'cancelled' | 'completed'
       task_label: 'bug' | 'implementacion' | 'mejora' | 'actualizacion' | 'otro'
+      sprint_status: 'active' | 'completed'
     }
     CompositeTypes: {
       [_ in never]: never

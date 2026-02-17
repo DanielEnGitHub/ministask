@@ -19,6 +19,7 @@ import type {
   TaskPriority,
   SubTask,
   Project,
+  Sprint,
 } from "@/lib/types";
 import { STATUS_CONFIG, LABEL_CONFIG, PRIORITY_CONFIG } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -27,6 +28,7 @@ import {
   getTaskStartDate,
   getTaskEndDate,
   getTaskProjectId,
+  getTaskSprintId,
   getTaskLabel,
 } from "@/lib/taskUtils";
 import { toDateInputValue } from "@/lib/dateUtils";
@@ -38,6 +40,7 @@ interface TaskModalProps {
   onSave: (task: Partial<Task>) => void;
   task?: Task | null;
   projects?: Project[];
+  sprints?: Sprint[];
   currentProjectId?: string | null;
 }
 
@@ -47,6 +50,7 @@ export function TaskModal({
   onSave,
   task,
   projects = [],
+  sprints = [],
   currentProjectId,
 }: TaskModalProps) {
   const permissions = usePermissions();
@@ -60,6 +64,7 @@ export function TaskModal({
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [projectId, setProjectId] = useState<string>("");
+  const [sprintId, setSprintId] = useState<string>("");
   // Imágenes existentes (URLs de Supabase)
   const [existingImages, setExistingImages] = useState<string[]>([]);
   // Imágenes nuevas por subir (File + preview base64)
@@ -103,6 +108,10 @@ export function TaskModal({
         setProjectId("");
       }
 
+      // Obtener el sprintId de la tarea
+      const taskSprintId = getTaskSprintId(task);
+      setSprintId(taskSprintId && typeof taskSprintId === "string" ? taskSprintId : "");
+
       setExistingImages(task.images || []);
       setNewImageFiles([]);
       setNewImagePreviews([]);
@@ -133,6 +142,7 @@ export function TaskModal({
     setStartDate("");
     setEndDate("");
     setProjectId(currentProjectId || "");
+    setSprintId("");
     setExistingImages([]);
     setNewImageFiles([]);
     setNewImagePreviews([]);
@@ -144,18 +154,32 @@ export function TaskModal({
   // Validar fechas en tiempo real
   const validateDates = (start: string, end: string) => {
     if (start && end) {
-      const startDateObj = new Date(start);
-      const endDateObj = new Date(end);
-      if (startDateObj > endDateObj) {
+      if (start > end) {
         setDateError(
           "La fecha de inicio no puede ser posterior a la fecha de fin"
         );
-      } else {
-        setDateError("");
+        return;
       }
-    } else {
-      setDateError("");
     }
+
+    // Validar contra el rango del sprint
+    if (sprintId) {
+      const selectedSprint = sprints.find((s) => s.id === sprintId);
+      if (selectedSprint) {
+        const sStart = selectedSprint.start_date.slice(0, 10);
+        const sEnd = selectedSprint.end_date.slice(0, 10);
+        if (start && (start < sStart || start > sEnd)) {
+          setDateError(`La fecha de inicio debe estar entre ${sStart} y ${sEnd}`);
+          return;
+        }
+        if (end && (end < sStart || end > sEnd)) {
+          setDateError(`La fecha de fin debe estar entre ${sStart} y ${sEnd}`);
+          return;
+        }
+      }
+    }
+
+    setDateError("");
   };
 
   const handleStartDateChange = (value: string) => {
@@ -285,6 +309,7 @@ export function TaskModal({
         startDate: startDate ? createUTCDate(startDate) : undefined,
         endDate: endDate ? createUTCDate(endDate) : undefined,
         projectId: projectId || null,
+        sprintId: sprintId || null,
         images: allImages.length > 0 ? allImages : undefined,
         updatedAt: new Date(),
         ...(!task?.id && { createdAt: new Date() }),
@@ -584,34 +609,124 @@ export function TaskModal({
               )}
             </div>
 
+            {/* Sprint (solo admin, solo sprints activos) */}
+            {permissions.isAdmin ? (
+              <div>
+                <label className="block text-sm font-medium mb-1.5">
+                  Sprint
+                </label>
+                {sprints.filter((s) => s.status === "active").length === 0 ? (
+                  <p className="text-xs text-muted-foreground p-2 bg-accent/30 rounded-lg">
+                    No hay sprints activos
+                  </p>
+                ) : (
+                  <Select
+                    key={`sprint-${task?.id || "new"}`}
+                    value={sprintId || "none"}
+                    onValueChange={(value) => {
+                      const newSprintId = value === "none" ? "" : value;
+                      setSprintId(newSprintId);
+                      // Ajustar fechas al rango del sprint si se selecciona uno
+                      if (newSprintId) {
+                        const selectedSprint = sprints.find((s) => s.id === newSprintId);
+                        if (selectedSprint) {
+                          const sStart = selectedSprint.start_date.slice(0, 10);
+                          const sEnd = selectedSprint.end_date.slice(0, 10);
+                          // Si fecha inicio está fuera del rango, ajustarla
+                          if (startDate && startDate < sStart) {
+                            setStartDate(sStart);
+                          }
+                          if (startDate && startDate > sEnd) {
+                            setStartDate(sStart);
+                          }
+                          // Si fecha fin está fuera del rango, ajustarla
+                          if (endDate && endDate > sEnd) {
+                            setEndDate(sEnd);
+                          }
+                          if (endDate && endDate < sStart) {
+                            setEndDate(sEnd);
+                          }
+                          setDateError("");
+                        }
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sin sprint" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Sin sprint</SelectItem>
+                      {sprints
+                        .filter((s) => s.status === "active")
+                        .map((sprint) => (
+                          <SelectItem key={sprint.id} value={sprint.id}>
+                            {sprint.name}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+            ) : sprintId ? (
+              <div>
+                <label className="block text-sm font-medium mb-1.5">
+                  Sprint
+                </label>
+                <div className="p-2 bg-accent/30 rounded-lg">
+                  <Badge className="bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 border-0">
+                    {sprints.find((s) => s.id === sprintId)?.name || "Sprint"}
+                  </Badge>
+                </div>
+              </div>
+            ) : null}
+
             {/* Fechas */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1.5">
-                  Fecha Inicio
-                </label>
-                <Input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => handleStartDateChange(e.target.value)}
-                  className={cn(dateError && "border-red-500")}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1.5">
-                  Fecha Fin
-                </label>
-                <Input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => handleEndDateChange(e.target.value)}
-                  className={cn(dateError && "border-red-500")}
-                />
-              </div>
-            </div>
-            {dateError && (
-              <p className="text-sm text-red-600 -mt-2">{dateError}</p>
-            )}
+            {(() => {
+              const selectedSprint = sprintId ? sprints.find((s) => s.id === sprintId) : null;
+              const minDate = selectedSprint ? selectedSprint.start_date.slice(0, 10) : undefined;
+              const maxDate = selectedSprint ? selectedSprint.end_date.slice(0, 10) : undefined;
+
+              return (
+                <>
+                  {selectedSprint && (
+                    <p className="text-xs text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/30 px-3 py-1.5 rounded-lg">
+                      Las fechas deben estar dentro del sprint: {minDate} — {maxDate}
+                    </p>
+                  )}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">
+                        Fecha Inicio
+                      </label>
+                      <Input
+                        type="date"
+                        value={startDate}
+                        onChange={(e) => handleStartDateChange(e.target.value)}
+                        min={minDate}
+                        max={maxDate}
+                        className={cn(dateError && "border-red-500")}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">
+                        Fecha Fin
+                      </label>
+                      <Input
+                        type="date"
+                        value={endDate}
+                        onChange={(e) => handleEndDateChange(e.target.value)}
+                        min={minDate}
+                        max={maxDate}
+                        className={cn(dateError && "border-red-500")}
+                      />
+                    </div>
+                  </div>
+                  {dateError && (
+                    <p className="text-sm text-red-600 -mt-2">{dateError}</p>
+                  )}
+                </>
+              );
+            })()}
 
             {/* Imágenes */}
             <div>

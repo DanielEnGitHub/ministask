@@ -65,6 +65,20 @@ export function getTaskLabel(task: any): string | null | undefined {
 }
 
 /**
+ * Obtiene el ID del sprint de una tarea
+ * Maneja tanto camelCase (sprintId) como snake_case (sprint_id)
+ */
+export function getTaskSprintId(task: any): string | null | undefined {
+  if (task.sprint_id !== undefined && task.sprint_id !== null) {
+    return task.sprint_id
+  }
+  if (task.sprintId !== undefined && task.sprintId !== null) {
+    return task.sprintId
+  }
+  return null
+}
+
+/**
  * Verifica si una tarea tiene fechas asignadas
  */
 export function hasTaskDates(task: any): boolean {

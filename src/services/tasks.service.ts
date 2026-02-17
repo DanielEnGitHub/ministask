@@ -17,6 +17,7 @@ export interface Task {
   label: TaskLabel | null
   priority: TaskPriority | null
   project_id: string | null
+  sprint_id: string | null
   start_date: string | null
   end_date: string | null
   subtasks: any[] | null
@@ -34,6 +35,7 @@ export interface CreateTaskInput {
   label?: TaskLabel
   priority?: TaskPriority
   projectId?: string
+  sprintId?: string | null
   startDate?: Date
   endDate?: Date
   subtasks?: any[]
@@ -47,6 +49,7 @@ export interface UpdateTaskInput {
   label?: TaskLabel
   priority?: TaskPriority
   projectId?: string
+  sprintId?: string | null
   startDate?: Date
   endDate?: Date
   subtasks?: any[]
@@ -129,6 +132,7 @@ export async function createTask(input: CreateTaskInput, userId: string) {
       label: input.label || null,
       priority: input.priority || null,
       project_id: input.projectId || null,
+      sprint_id: input.sprintId || null,
       start_date: input.startDate ? input.startDate.toISOString() : null,
       end_date: input.endDate ? input.endDate.toISOString() : null,
       subtasks: input.subtasks || null,
@@ -167,6 +171,10 @@ export async function updateTask(taskId: string, input: UpdateTaskInput) {
     if (input.projectId !== undefined) {
       updates.project_id = input.projectId
       delete updates.projectId
+    }
+    if (input.sprintId !== undefined) {
+      updates.sprint_id = input.sprintId || null
+      delete updates.sprintId
     }
     if (input.startDate !== undefined) {
       updates.start_date = input.startDate ? input.startDate.toISOString() : null

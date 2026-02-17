@@ -4,7 +4,7 @@ import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
 import { cn } from "@/lib/utils";
-import type { Task, Project, Comment } from "@/lib/types";
+import type { Task, Project, Comment, Sprint } from "@/lib/types";
 import { STATUS_CONFIG, LABEL_CONFIG, PRIORITY_CONFIG } from "@/lib/types";
 import {
   Calendar,
@@ -24,6 +24,7 @@ import {
 import { formatDateForDisplay } from "@/lib/dateUtils";
 import {
   getTaskProjectId,
+  getTaskSprintId,
   getTaskStartDate,
   getTaskEndDate,
 } from "@/lib/taskUtils";
@@ -36,6 +37,7 @@ interface TaskDetailModalProps {
   onClose: () => void;
   task: Task | null;
   projects?: Project[];
+  sprints?: Sprint[];
   onEdit: (task: Task) => void;
 }
 
@@ -44,6 +46,7 @@ export function TaskDetailModal({
   onClose,
   task,
   projects = [],
+  sprints = [],
   onEdit,
 }: TaskDetailModalProps) {
   const { user, profile, isAdmin } = useAuth();
@@ -210,6 +213,8 @@ export function TaskDetailModal({
   // Obtener datos de la tarea manejando tanto camelCase como snake_case
   const projectId = getTaskProjectId(task);
   const project = projects.find((p) => p.id === projectId);
+  const taskSprintId = getTaskSprintId(task);
+  const sprint = sprints.find((s) => s.id === taskSprintId);
   const startDate = getTaskStartDate(task);
   const endDate = getTaskEndDate(task);
 
@@ -326,6 +331,23 @@ export function TaskDetailModal({
                 <div className="flex items-center gap-2">
                   <Folder className="h-4 w-4 text-muted-foreground" />
                   <span className="text-foreground">{project.name}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Sprint */}
+            {sprint && (
+              <div>
+                <label className="block text-sm font-medium text-muted-foreground mb-2">
+                  Sprint
+                </label>
+                <div className="flex items-center gap-2">
+                  <Badge className="bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 border-0 text-sm px-3 py-1">
+                    {sprint.name}
+                  </Badge>
+                  <span className="text-xs text-muted-foreground">
+                    {sprint.start_date?.slice(0, 10)} — {sprint.end_date?.slice(0, 10)}
+                  </span>
                 </div>
               </div>
             )}

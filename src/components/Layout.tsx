@@ -15,6 +15,8 @@ import {
   Users,
   Menu,
   X,
+  Zap,
+  CheckCircle2,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -25,7 +27,9 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "./ui/accordion";
-import type { Project, Task } from "@/lib/types";
+import { Badge } from "./ui/badge";
+import type { Project, Task, Sprint } from "@/lib/types";
+import { SPRINT_STATUS_CONFIG } from "@/lib/types";
 import { useConfirm } from "@/hooks/useConfirm";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -51,6 +55,11 @@ interface LayoutProps {
   onSelectProject?: (projectId: string | null) => void;
   onEditProject?: (project: Project) => void;
   onDeleteProject?: (projectId: string) => void;
+  sprints?: Sprint[];
+  onNewSprint?: () => void;
+  onEditSprint?: (sprint: Sprint) => void;
+  onCompleteSprint?: (sprintId: string) => void;
+  onDeleteSprint?: (sprintId: string) => void;
   theme?: "light" | "dark";
   onToggleTheme?: () => void;
 }
@@ -67,6 +76,11 @@ export function Layout({
   onSelectProject,
   onEditProject,
   onDeleteProject,
+  sprints = [],
+  onNewSprint,
+  onEditSprint,
+  onCompleteSprint,
+  onDeleteSprint,
   theme = "light",
   onToggleTheme,
 }: LayoutProps) {
@@ -328,6 +342,150 @@ export function Layout({
                   )}
                 </AccordionContent>
               </AccordionItem>
+
+              {/* Sprints - Solo visible para admin */}
+              {permissions.canCreateSprint && (
+                <AccordionItem value="sprints" className="border-none">
+                  <AccordionTrigger className="text-xs font-semibold text-muted-foreground uppercase px-3 py-2 hover:no-underline hover:bg-accent rounded-lg">
+                    <div className="flex items-center justify-between w-full pr-2">
+                      <span>Sprints</span>
+                      <span
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onNewSprint?.();
+                        }}
+                        className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                        title="Nuevo Sprint"
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.stopPropagation();
+                            onNewSprint?.();
+                          }
+                        }}
+                      >
+                        <Plus className="h-3 w-3" />
+                      </span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="space-y-1 pt-2">
+                    {sprints.length === 0 ? (
+                      <Button
+                        onClick={() => onNewSprint?.()}
+                        variant="outline"
+                        className="w-full"
+                        size="sm"
+                      >
+                        <Zap className="h-4 w-4 mr-2" />
+                        Crear Sprint
+                      </Button>
+                    ) : (
+                      <div className="space-y-1">
+                        {/* Sprints activos */}
+                        {sprints
+                          .filter((s) => s.status === "active")
+                          .map((sprint) => (
+                            <div key={sprint.id} className="group relative">
+                              <div className="w-full flex items-center gap-2 px-3 py-2 pr-24 rounded-xl text-sm font-medium text-foreground bg-indigo-50 dark:bg-indigo-950/30">
+                                <Zap className="h-4 w-4 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
+                                <span className="flex-1 text-left truncate">
+                                  {sprint.name}
+                                </span>
+                              </div>
+                              <div className="absolute right-2 top-2 hidden group-hover:flex gap-1">
+                                <button
+                                  onClick={() => onEditSprint?.(sprint)}
+                                  className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded"
+                                  title="Editar"
+                                >
+                                  <Edit className="h-3 w-3" />
+                                </button>
+                                <button
+                                  onClick={async () => {
+                                    const confirmed = await confirm({
+                                      title: "Completar sprint",
+                                      description: `¿Completar "${sprint.name}"? Las tareas no finalizadas se desasignarán del sprint.`,
+                                      confirmText: "Completar",
+                                      cancelText: "Cancelar",
+                                      variant: "default",
+                                    });
+                                    if (confirmed) {
+                                      onCompleteSprint?.(sprint.id);
+                                    }
+                                  }}
+                                  className="p-1 hover:bg-green-100 dark:hover:bg-green-900/30 text-green-600 rounded"
+                                  title="Completar Sprint"
+                                >
+                                  <CheckCircle2 className="h-3 w-3" />
+                                </button>
+                                <button
+                                  onClick={async () => {
+                                    const confirmed = await confirm({
+                                      title: "Eliminar sprint",
+                                      description: `¿Eliminar "${sprint.name}"? Las tareas se desasignarán del sprint.`,
+                                      confirmText: "Eliminar",
+                                      cancelText: "Cancelar",
+                                      variant: "destructive",
+                                    });
+                                    if (confirmed) {
+                                      onDeleteSprint?.(sprint.id);
+                                    }
+                                  }}
+                                  className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 rounded"
+                                  title="Eliminar"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+
+                        {/* Sprints completados */}
+                        {sprints.filter((s) => s.status === "completed").length > 0 && (
+                          <div className="pt-1">
+                            <p className="text-[10px] text-muted-foreground uppercase px-3 mb-1">
+                              Completados
+                            </p>
+                            {sprints
+                              .filter((s) => s.status === "completed")
+                              .map((sprint) => (
+                                <div key={sprint.id} className="group relative">
+                                  <div className="w-full flex items-center gap-2 px-3 py-1.5 pr-12 rounded-xl text-xs text-muted-foreground">
+                                    <CheckCircle2 className="h-3 w-3 text-green-500 flex-shrink-0" />
+                                    <span className="flex-1 text-left truncate">
+                                      {sprint.name}
+                                    </span>
+                                  </div>
+                                  <div className="absolute right-2 top-1.5 hidden group-hover:flex gap-1">
+                                    <button
+                                      onClick={async () => {
+                                        const confirmed = await confirm({
+                                          title: "Eliminar sprint",
+                                          description: `¿Eliminar "${sprint.name}"?`,
+                                          confirmText: "Eliminar",
+                                          cancelText: "Cancelar",
+                                          variant: "destructive",
+                                        });
+                                        if (confirmed) {
+                                          onDeleteSprint?.(sprint.id);
+                                        }
+                                      }}
+                                      className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 rounded"
+                                      title="Eliminar"
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </AccordionContent>
+                </AccordionItem>
+              )}
 
               {/* Vistas */}
               <AccordionItem value="vistas" className="border-none">

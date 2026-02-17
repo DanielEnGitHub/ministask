@@ -8,16 +8,17 @@ import { Eye, Trash2, CheckSquare, Calendar } from "lucide-react";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
 import { Badge } from "../ui/badge";
-import type { Task, TaskStatus } from "@/lib/types";
+import type { Task, TaskStatus, Sprint } from "@/lib/types";
 import { STATUS_CONFIG, LABEL_CONFIG, PRIORITY_CONFIG } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useConfirm } from "@/hooks/useConfirm";
 import { usePermissions } from "@/hooks/usePermissions";
-import { getTaskStartDate, getTaskEndDate } from "@/lib/taskUtils";
+import { getTaskStartDate, getTaskEndDate, getTaskSprintId } from "@/lib/taskUtils";
 import { formatDateForDisplay } from "@/lib/dateUtils";
 
 interface KanbanViewProps {
   tasks: Task[];
+  sprints?: Sprint[];
   onEditTask: (task: Task) => void;
   onDeleteTask: (taskId: string) => void;
   onUpdateTaskStatus: (taskId: string, newStatus: TaskStatus) => void;
@@ -33,6 +34,7 @@ const STATUS_ORDER: TaskStatus[] = [
 
 export function KanbanView({
   tasks,
+  sprints = [],
   onEditTask,
   onDeleteTask,
   onUpdateTaskStatus,
@@ -159,6 +161,15 @@ export function KanbanView({
                                             {LABEL_CONFIG[task.label].icon}
                                           </span>
                                         )}
+                                        {(() => {
+                                          const sid = getTaskSprintId(task);
+                                          const sprint = sid ? sprints.find(s => s.id === sid) : null;
+                                          return sprint ? (
+                                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 truncate max-w-[100px]">
+                                              {sprint.name}
+                                            </span>
+                                          ) : null;
+                                        })()}
                                       </div>
                                     </div>
                                     <div className="flex gap-1">
