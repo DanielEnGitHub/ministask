@@ -149,6 +149,7 @@ export function Dashboard() {
           startDate,
           endDate,
           subtasks: taskData.subtasks,
+          images: taskData.images as string[] | undefined,
         })
 
         if (data) {
@@ -167,6 +168,7 @@ export function Dashboard() {
           startDate,
           endDate,
           subtasks: taskData.subtasks,
+          images: taskData.images as string[] | undefined,
         }, user.id)
 
         if (data) {

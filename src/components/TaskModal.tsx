@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Trash2, Image, X } from "lucide-react";
+import { Plus, Trash2, Image, X, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
@@ -30,6 +30,7 @@ import {
   getTaskLabel,
 } from "@/lib/taskUtils";
 import { toDateInputValue } from "@/lib/dateUtils";
+import { uploadTaskImage, deleteTaskImage } from "@/services/storage.service";
 
 interface TaskModalProps {
   open: boolean;
@@ -59,7 +60,13 @@ export function TaskModal({
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [projectId, setProjectId] = useState<string>("");
-  const [images, setImages] = useState<string[]>([]);
+  // Imágenes existentes (URLs de Supabase)
+  const [existingImages, setExistingImages] = useState<string[]>([]);
+  // Imágenes nuevas por subir (File + preview base64)
+  const [newImageFiles, setNewImageFiles] = useState<File[]>([]);
+  const [newImagePreviews, setNewImagePreviews] = useState<string[]>([]);
+  const [removedExistingImages, setRemovedExistingImages] = useState<string[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [dateError, setDateError] = useState("");
 
@@ -96,7 +103,10 @@ export function TaskModal({
         setProjectId("");
       }
 
-      setImages(task.images || []);
+      setExistingImages(task.images || []);
+      setNewImageFiles([]);
+      setNewImagePreviews([]);
+      setRemovedExistingImages([]);
 
       // Marcar como cargado después de establecer todos los valores
       // Usar setTimeout para asegurar que los estados se hayan actualizado
@@ -123,7 +133,11 @@ export function TaskModal({
     setStartDate("");
     setEndDate("");
     setProjectId(currentProjectId || "");
-    setImages([]);
+    setExistingImages([]);
+    setNewImageFiles([]);
+    setNewImagePreviews([]);
+    setRemovedExistingImages([]);
+    setIsUploading(false);
     setDateError("");
   };
 
@@ -185,19 +199,29 @@ export function TaskModal({
     if (!files) return;
 
     Array.from(files).forEach((file) => {
+      setNewImageFiles((prev) => [...prev, file]);
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImages((prev) => [...prev, reader.result as string]);
+        setNewImagePreviews((prev) => [...prev, reader.result as string]);
       };
       reader.readAsDataURL(file);
     });
+    // Reset input para permitir seleccionar el mismo archivo de nuevo
+    e.target.value = "";
   };
 
-  const handleRemoveImage = (index: number) => {
-    setImages((prev) => prev.filter((_, i) => i !== index));
+  const handleRemoveExistingImage = (index: number) => {
+    const url = existingImages[index];
+    setRemovedExistingImages((prev) => [...prev, url]);
+    setExistingImages((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleRemoveNewImage = (index: number) => {
+    setNewImageFiles((prev) => prev.filter((_, i) => i !== index));
+    setNewImagePreviews((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
     if (!projectId) {
@@ -215,31 +239,66 @@ export function TaskModal({
       }
     }
 
-    // Función auxiliar para crear una fecha en UTC medianoche
-    const createUTCDate = (dateString: string): Date => {
-      const [year, month, day] = dateString.split("-").map(Number);
-      return new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
-    };
+    setIsUploading(true);
 
-    const taskData: Partial<Task> = {
-      ...(task?.id && { id: task.id }),
-      title: title.trim(),
-      description: description.trim() || undefined,
-      status,
-      label: label || undefined,
-      priority: priority || undefined,
-      subtasks,
-      startDate: startDate ? createUTCDate(startDate) : undefined,
-      endDate: endDate ? createUTCDate(endDate) : undefined,
-      projectId: projectId || null,
-      images: images.length > 0 ? images : undefined,
-      updatedAt: new Date(),
-      ...(!task?.id && { createdAt: new Date() }),
-    };
+    try {
+      // Usar el ID de la tarea existente o generar uno temporal para nuevas tareas
+      const taskId = task?.id || crypto.randomUUID();
 
-    onSave(taskData);
-    resetForm();
-    onClose();
+      // Subir imágenes nuevas a Supabase Storage
+      const uploadedUrls: string[] = [];
+      for (const file of newImageFiles) {
+        try {
+          const url = await uploadTaskImage(file, taskId);
+          uploadedUrls.push(url);
+        } catch (err) {
+          console.error('[TaskModal] Error subiendo imagen:', err);
+        }
+      }
+
+      // Eliminar imágenes removidas de Storage
+      for (const url of removedExistingImages) {
+        try {
+          await deleteTaskImage(url);
+        } catch (err) {
+          console.error('[TaskModal] Error eliminando imagen:', err);
+        }
+      }
+
+      // Combinar URLs existentes (no removidas) + URLs recién subidas
+      const allImages = [...existingImages, ...uploadedUrls];
+
+      // Función auxiliar para crear una fecha en UTC medianoche
+      const createUTCDate = (dateString: string): Date => {
+        const [year, month, day] = dateString.split("-").map(Number);
+        return new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+      };
+
+      const taskData: Partial<Task> = {
+        ...(task?.id && { id: task.id }),
+        title: title.trim(),
+        description: description.trim() || undefined,
+        status,
+        label: label || undefined,
+        priority: priority || undefined,
+        subtasks,
+        startDate: startDate ? createUTCDate(startDate) : undefined,
+        endDate: endDate ? createUTCDate(endDate) : undefined,
+        projectId: projectId || null,
+        images: allImages.length > 0 ? allImages : undefined,
+        updatedAt: new Date(),
+        ...(!task?.id && { createdAt: new Date() }),
+      };
+
+      onSave(taskData);
+      resetForm();
+      onClose();
+    } catch (error) {
+      console.error('[TaskModal] Error al guardar:', error);
+      alert("Error al subir las imágenes. Inténtalo de nuevo.");
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
@@ -581,10 +640,10 @@ export function TaskModal({
                   </Button>
                 </div>
 
-                {images.length > 0 && (
+                {(existingImages.length > 0 || newImagePreviews.length > 0) && (
                   <div className="grid grid-cols-3 gap-2">
-                    {images.map((img, index) => (
-                      <div key={index} className="relative group">
+                    {existingImages.map((img, index) => (
+                      <div key={`existing-${index}`} className="relative group">
                         <img
                           src={img}
                           alt={`Imagen ${index + 1}`}
@@ -592,7 +651,23 @@ export function TaskModal({
                         />
                         <button
                           type="button"
-                          onClick={() => handleRemoveImage(index)}
+                          onClick={() => handleRemoveExistingImage(index)}
+                          className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                    {newImagePreviews.map((img, index) => (
+                      <div key={`new-${index}`} className="relative group">
+                        <img
+                          src={img}
+                          alt={`Nueva imagen ${index + 1}`}
+                          className="w-full h-24 object-cover rounded-lg border border-dashed border-blue-400"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveNewImage(index)}
                           className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                         >
                           <X className="h-3 w-3" />
@@ -677,10 +752,18 @@ export function TaskModal({
                   !title.trim() ||
                   !projectId ||
                   projects.length === 0 ||
-                  !!dateError
+                  !!dateError ||
+                  isUploading
                 }
               >
-                {task ? "Guardar Cambios" : "Crear Tarea"}
+                {isUploading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Subiendo...
+                  </>
+                ) : (
+                  task ? "Guardar Cambios" : "Crear Tarea"
+                )}
               </Button>
             </div>
           </form>

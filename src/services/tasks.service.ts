@@ -21,6 +21,7 @@ export interface Task {
   end_date: string | null
   subtasks: any[] | null
   task_views: any[] | null
+  images: string[] | null
   created_at: string
   updated_at: string
   created_by: string
@@ -36,6 +37,7 @@ export interface CreateTaskInput {
   startDate?: Date
   endDate?: Date
   subtasks?: any[]
+  images?: string[]
 }
 
 export interface UpdateTaskInput {
@@ -48,6 +50,7 @@ export interface UpdateTaskInput {
   startDate?: Date
   endDate?: Date
   subtasks?: any[]
+  images?: string[]
 }
 
 /**
@@ -130,6 +133,7 @@ export async function createTask(input: CreateTaskInput, userId: string) {
       end_date: input.endDate ? input.endDate.toISOString() : null,
       subtasks: input.subtasks || null,
       task_views: null,
+      images: input.images || null,
       created_by: userId,
     }
 
@@ -171,6 +175,9 @@ export async function updateTask(taskId: string, input: UpdateTaskInput) {
     if (input.endDate !== undefined) {
       updates.end_date = input.endDate ? input.endDate.toISOString() : null
       delete updates.endDate
+    }
+    if (input.images !== undefined) {
+      updates.images = input.images
     }
 
     // @ts-ignore - Supabase generated types issue

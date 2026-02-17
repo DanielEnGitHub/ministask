@@ -292,6 +292,31 @@ export function TaskDetailModal({
               </div>
             )}
 
+            {/* Imágenes */}
+            {task.images && task.images.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-muted-foreground mb-2">
+                  Imágenes ({task.images.length})
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {task.images.map((img: string, index: number) => (
+                    <a
+                      key={index}
+                      href={img}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <img
+                        src={img}
+                        alt={`Imagen ${index + 1}`}
+                        className="w-full h-24 object-cover rounded-lg border hover:opacity-80 transition-opacity cursor-pointer"
+                      />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Proyecto */}
             {project && (
               <div>
