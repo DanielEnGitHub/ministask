@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Layout, type ViewType } from '@/components/Layout'
 import { TaskModal } from '@/components/TaskModal'
 import { TaskDetailModal } from '@/components/TaskDetailModal'
@@ -13,12 +13,14 @@ import { useAuth } from '@/contexts/AuthContext'
 import * as ProjectsService from '@/services/projects.service'
 import * as TasksService from '@/services/tasks.service'
 import * as SprintsService from '@/services/sprints.service'
-import { getTaskProjectId } from '@/lib/taskUtils'
+import { getTaskProjectId, getTaskSprintId } from '@/lib/taskUtils'
+import { getCurrentSprint, isSprintOverdue } from '@/lib/sprintUtils'
 
 // Keys para localStorage
 const STORAGE_KEYS = {
   CURRENT_VIEW: 'minitasks_current_view',
   SELECTED_PROJECT: 'minitasks_selected_project',
+  SHOW_UNSPRINTED_TASKS: 'minitasks_show_unsprinted_tasks',
 }
 
 export function Dashboard() {
@@ -42,6 +44,12 @@ export function Dashboard() {
     const saved = localStorage.getItem(STORAGE_KEYS.SELECTED_PROJECT)
     return saved || null
   })
+  const [selectedSprintId, setSelectedSprintId] = useState<string | null>(null)
+  const [sprintAutoSelected, setSprintAutoSelected] = useState(false)
+  const [showUnsprintedTasks, setShowUnsprintedTasks] = useState<boolean>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.SHOW_UNSPRINTED_TASKS)
+    return saved !== null ? saved === 'true' : true
+  })
 
   // Estado para datos desde Supabase
   const [tasks, setTasks] = useState<Task[]>([])
@@ -56,6 +64,16 @@ export function Dashboard() {
     loadData()
   }, [user, profile])
 
+  // Auto-seleccionar sprint actual al cargar sprints por primera vez
+  useEffect(() => {
+    if (sprintAutoSelected || sprints.length === 0) return
+    const autoSprint = getCurrentSprint(sprints)
+    if (autoSprint) {
+      setSelectedSprintId(autoSprint.id)
+    }
+    setSprintAutoSelected(true)
+  }, [sprints, sprintAutoSelected])
+
   // Guardar vista seleccionada en localStorage
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.CURRENT_VIEW, currentView)
@@ -69,6 +87,11 @@ export function Dashboard() {
       localStorage.removeItem(STORAGE_KEYS.SELECTED_PROJECT)
     }
   }, [selectedProjectId])
+
+  // Guardar preferencia de tareas sin sprint en localStorage
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.SHOW_UNSPRINTED_TASKS, String(showUnsprintedTasks))
+  }, [showUnsprintedTasks])
 
   const loadData = async () => {
     if (!user || !profile) return
@@ -93,10 +116,31 @@ export function Dashboard() {
     }
   }
 
+  // Sprint seleccionado
+  const selectedSprint = useMemo(
+    () => sprints.find(s => s.id === selectedSprintId) || null,
+    [sprints, selectedSprintId]
+  )
+
   // Filtrar tareas por proyecto seleccionado
-  const filteredTasks = selectedProjectId
+  const projectFilteredTasks = selectedProjectId
     ? tasks.filter(t => getTaskProjectId(t) === selectedProjectId)
     : tasks
+
+  // Filtrar tareas por sprint seleccionado
+  const filteredTasks = useMemo(() => {
+    if (!selectedSprint) return projectFilteredTasks
+
+    return projectFilteredTasks.filter(task => {
+      const taskSprintId = getTaskSprintId(task)
+      // Tarea del sprint seleccionado → mostrar
+      if (taskSprintId === selectedSprint.id) return true
+      // Tarea sin sprint → depende del toggle
+      if (!taskSprintId) return showUnsprintedTasks
+      // Tarea de otro sprint → no mostrar
+      return false
+    })
+  }, [projectFilteredTasks, selectedSprint, showUnsprintedTasks])
 
   // Calcular contadores por estado (usando tareas filtradas)
   const taskCounts = {
@@ -181,11 +225,17 @@ export function Dashboard() {
 
       if (data) {
         // @ts-ignore
-        setSprints(prev => prev.map(s => s.id === data.id ? data : s))
+        const updatedSprints = sprints.map(s => s.id === data.id ? data : s)
+        setSprints(updatedSprints)
         // Recargar tareas ya que algunas fueron desasignadas
         if (user && profile) {
           const { data: tasksData } = await TasksService.getAllTasks(user.id, isAdmin)
           setTasks(tasksData || [])
+        }
+        // Si era el sprint seleccionado, auto-seleccionar el siguiente
+        if (selectedSprintId === sprintId) {
+          const nextSprint = getCurrentSprint(updatedSprints)
+          setSelectedSprintId(nextSprint?.id || null)
         }
       }
     } catch (error) {
@@ -198,13 +248,19 @@ export function Dashboard() {
       const { error } = await SprintsService.deleteSprint(sprintId)
 
       if (!error) {
-        setSprints(prev => prev.filter(s => s.id !== sprintId))
+        const updatedSprints = sprints.filter(s => s.id !== sprintId)
+        setSprints(updatedSprints)
         // Desasignar tareas localmente
         setTasks(prev => prev.map(t =>
           (t as any).sprint_id === sprintId
             ? { ...t, sprint_id: null } as Task
             : t
         ))
+        // Si era el sprint seleccionado, auto-seleccionar el siguiente
+        if (selectedSprintId === sprintId) {
+          const nextSprint = getCurrentSprint(updatedSprints)
+          setSelectedSprintId(nextSprint?.id || null)
+        }
       }
     } catch (error) {
       console.error('Error deleting sprint:', error)
@@ -415,6 +471,10 @@ export function Dashboard() {
       onEditProject={handleEditProject}
       onDeleteProject={handleDeleteProject}
       sprints={sprints}
+      selectedSprintId={selectedSprintId}
+      showUnsprintedTasks={showUnsprintedTasks}
+      onSelectSprint={(id) => setSelectedSprintId(id)}
+      onToggleUnsprintedTasks={() => setShowUnsprintedTasks(prev => !prev)}
       onNewSprint={handleNewSprint}
       onEditSprint={handleEditSprint}
       onCompleteSprint={handleCompleteSprint}

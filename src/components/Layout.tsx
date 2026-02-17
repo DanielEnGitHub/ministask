@@ -17,6 +17,9 @@ import {
   X,
   Zap,
   CheckCircle2,
+  Eye,
+  EyeOff,
+  AlertTriangle,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -30,6 +33,7 @@ import {
 import { Badge } from "./ui/badge";
 import type { Project, Task, Sprint } from "@/lib/types";
 import { SPRINT_STATUS_CONFIG } from "@/lib/types";
+import { isSprintOverdue } from "@/lib/sprintUtils";
 import { useConfirm } from "@/hooks/useConfirm";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -56,6 +60,10 @@ interface LayoutProps {
   onEditProject?: (project: Project) => void;
   onDeleteProject?: (projectId: string) => void;
   sprints?: Sprint[];
+  selectedSprintId?: string | null;
+  showUnsprintedTasks?: boolean;
+  onSelectSprint?: (sprintId: string | null) => void;
+  onToggleUnsprintedTasks?: () => void;
   onNewSprint?: () => void;
   onEditSprint?: (sprint: Sprint) => void;
   onCompleteSprint?: (sprintId: string) => void;
@@ -77,6 +85,10 @@ export function Layout({
   onEditProject,
   onDeleteProject,
   sprints = [],
+  selectedSprintId,
+  showUnsprintedTasks,
+  onSelectSprint,
+  onToggleUnsprintedTasks,
   onNewSprint,
   onEditSprint,
   onCompleteSprint,
@@ -215,7 +227,8 @@ export function Layout({
             <Accordion
               type="multiple"
               className="space-y-2"
-              defaultValue={["proyectos", "vistas"]}
+              // defaultValue={["proyectos", "sprints", "vistas"]}
+              defaultValue={[]}
             >
               {/* Proyectos */}
               <AccordionItem value="proyectos" className="border-none">
@@ -343,34 +356,67 @@ export function Layout({
                 </AccordionContent>
               </AccordionItem>
 
-              {/* Sprints - Solo visible para admin */}
-              {permissions.canCreateSprint && (
-                <AccordionItem value="sprints" className="border-none">
-                  <AccordionTrigger className="text-xs font-semibold text-muted-foreground uppercase px-3 py-2 hover:no-underline hover:bg-accent rounded-lg">
-                    <div className="flex items-center justify-between w-full pr-2">
-                      <span>Sprints</span>
-                      <span
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onNewSprint?.();
-                        }}
-                        className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                        title="Nuevo Sprint"
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === " ") {
+              {/* Sprints */}
+              <AccordionItem value="sprints" className="border-none">
+                <AccordionTrigger className="text-xs font-semibold text-muted-foreground uppercase px-3 py-2 hover:no-underline hover:bg-accent rounded-lg">
+                  <div className="flex items-center justify-between w-full pr-2">
+                    <span>Sprints</span>
+                    <div className="flex items-center gap-1">
+                      {/* Toggle tareas sin sprint (solo visible si hay sprint seleccionado) */}
+                      {selectedSprintId && (
+                        <span
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onToggleUnsprintedTasks?.();
+                          }}
+                          className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                          title={
+                            showUnsprintedTasks
+                              ? "Ocultar tareas sin sprint"
+                              : "Mostrar tareas sin sprint"
+                          }
+                          role="button"
+                          tabIndex={0}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.stopPropagation();
+                              onToggleUnsprintedTasks?.();
+                            }
+                          }}
+                        >
+                          {showUnsprintedTasks ? (
+                            <Eye className="h-3 w-3" />
+                          ) : (
+                            <EyeOff className="h-3 w-3" />
+                          )}
+                        </span>
+                      )}
+                      {permissions.canCreateSprint && (
+                        <span
+                          onClick={(e) => {
                             e.stopPropagation();
                             onNewSprint?.();
-                          }
-                        }}
-                      >
-                        <Plus className="h-3 w-3" />
-                      </span>
+                          }}
+                          className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                          title="Nuevo Sprint"
+                          role="button"
+                          tabIndex={0}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.stopPropagation();
+                              onNewSprint?.();
+                            }
+                          }}
+                        >
+                          <Plus className="h-3 w-3" />
+                        </span>
+                      )}
                     </div>
-                  </AccordionTrigger>
-                  <AccordionContent className="space-y-1 pt-2">
-                    {sprints.length === 0 ? (
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="space-y-1 pt-2">
+                  {sprints.length === 0 ? (
+                    permissions.canCreateSprint ? (
                       <Button
                         onClick={() => onNewSprint?.()}
                         variant="outline"
@@ -381,85 +427,160 @@ export function Layout({
                         Crear Sprint
                       </Button>
                     ) : (
-                      <div className="space-y-1">
-                        {/* Sprints activos */}
-                        {sprints
-                          .filter((s) => s.status === "active")
-                          .map((sprint) => (
+                      <p className="text-xs text-muted-foreground px-3 py-2">
+                        No hay sprints disponibles
+                      </p>
+                    )
+                  ) : (
+                    <div className="space-y-1">
+                      {/* Opción "Todos los sprints" para quitar filtro */}
+                      <button
+                        onClick={() => onSelectSprint?.(null)}
+                        className={cn(
+                          "w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-colors",
+                          !selectedSprintId
+                            ? "bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300"
+                            : "text-muted-foreground hover:bg-accent"
+                        )}
+                      >
+                        <Zap className="h-4 w-4" />
+                        Todos los sprints
+                      </button>
+
+                      {/* Sprints activos */}
+                      {sprints
+                        .filter((s) => s.status === "active")
+                        .map((sprint) => {
+                          const overdue = isSprintOverdue(sprint);
+                          const isSelected = selectedSprintId === sprint.id;
+                          return (
                             <div key={sprint.id} className="group relative">
-                              <div className="w-full flex items-center gap-2 px-3 py-2 pr-24 rounded-xl text-sm font-medium text-foreground bg-indigo-50 dark:bg-indigo-950/30">
-                                <Zap className="h-4 w-4 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
+                              <button
+                                onClick={() => onSelectSprint?.(sprint.id)}
+                                className={cn(
+                                  "w-full flex items-center gap-2 px-3 py-2 pr-20 rounded-xl text-sm font-medium transition-colors",
+                                  isSelected
+                                    ? overdue
+                                      ? "bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300"
+                                      : "bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300"
+                                    : "text-muted-foreground hover:bg-accent"
+                                )}
+                              >
+                                <Zap
+                                  className={cn(
+                                    "h-4 w-4 flex-shrink-0",
+                                    isSelected && overdue
+                                      ? "text-orange-600 dark:text-orange-400"
+                                      : isSelected
+                                        ? "text-indigo-600 dark:text-indigo-400"
+                                        : ""
+                                  )}
+                                />
                                 <span className="flex-1 text-left truncate">
                                   {sprint.name}
                                 </span>
-                              </div>
-                              <div className="absolute right-2 top-2 hidden group-hover:flex gap-1">
-                                <button
-                                  onClick={() => onEditSprint?.(sprint)}
-                                  className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded"
-                                  title="Editar"
-                                >
-                                  <Edit className="h-3 w-3" />
-                                </button>
-                                <button
-                                  onClick={async () => {
-                                    const confirmed = await confirm({
-                                      title: "Completar sprint",
-                                      description: `¿Completar "${sprint.name}"? Las tareas no finalizadas se desasignarán del sprint.`,
-                                      confirmText: "Completar",
-                                      cancelText: "Cancelar",
-                                      variant: "default",
-                                    });
-                                    if (confirmed) {
-                                      onCompleteSprint?.(sprint.id);
-                                    }
-                                  }}
-                                  className="p-1 hover:bg-green-100 dark:hover:bg-green-900/30 text-green-600 rounded"
-                                  title="Completar Sprint"
-                                >
-                                  <CheckCircle2 className="h-3 w-3" />
-                                </button>
-                                <button
-                                  onClick={async () => {
-                                    const confirmed = await confirm({
-                                      title: "Eliminar sprint",
-                                      description: `¿Eliminar "${sprint.name}"? Las tareas se desasignarán del sprint.`,
-                                      confirmText: "Eliminar",
-                                      cancelText: "Cancelar",
-                                      variant: "destructive",
-                                    });
-                                    if (confirmed) {
-                                      onDeleteSprint?.(sprint.id);
-                                    }
-                                  }}
-                                  className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 rounded"
-                                  title="Eliminar"
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                </button>
-                              </div>
-                            </div>
-                          ))}
+                                {overdue && (
+                                  <Badge
+                                    variant="outline"
+                                    className="text-[10px] px-1.5 py-0 border-orange-300 dark:border-orange-700 text-orange-700 dark:text-orange-300 bg-orange-100 dark:bg-orange-900/40 flex-shrink-0"
+                                  >
+                                    <AlertTriangle className="h-2.5 w-2.5 mr-0.5" />
+                                    Vencido
+                                  </Badge>
+                                )}
+                              </button>
 
-                        {/* Sprints completados */}
-                        {sprints.filter((s) => s.status === "completed").length > 0 && (
-                          <div className="pt-1">
-                            <p className="text-[10px] text-muted-foreground uppercase px-3 mb-1">
-                              Completados
-                            </p>
-                            {sprints
-                              .filter((s) => s.status === "completed")
-                              .map((sprint) => (
-                                <div key={sprint.id} className="group relative">
-                                  <div className="w-full flex items-center gap-2 px-3 py-1.5 pr-12 rounded-xl text-xs text-muted-foreground">
-                                    <CheckCircle2 className="h-3 w-3 text-green-500 flex-shrink-0" />
-                                    <span className="flex-1 text-left truncate">
-                                      {sprint.name}
-                                    </span>
-                                  </div>
+                              {permissions.canCreateSprint && (
+                                <div className="absolute right-2 top-2 hidden group-hover:flex gap-1">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onEditSprint?.(sprint);
+                                    }}
+                                    className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded"
+                                    title="Editar"
+                                  >
+                                    <Edit className="h-3 w-3" />
+                                  </button>
+                                  <button
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      const confirmed = await confirm({
+                                        title: "Completar sprint",
+                                        description: `¿Completar "${sprint.name}"? Las tareas no finalizadas se desasignarán del sprint.`,
+                                        confirmText: "Completar",
+                                        cancelText: "Cancelar",
+                                        variant: "default",
+                                      });
+                                      if (confirmed) {
+                                        onCompleteSprint?.(sprint.id);
+                                      }
+                                    }}
+                                    className="p-1 hover:bg-green-100 dark:hover:bg-green-900/30 text-green-600 rounded"
+                                    title="Completar Sprint"
+                                  >
+                                    <CheckCircle2 className="h-3 w-3" />
+                                  </button>
+                                  <button
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      const confirmed = await confirm({
+                                        title: "Eliminar sprint",
+                                        description: `¿Eliminar "${sprint.name}"? Las tareas se desasignarán del sprint.`,
+                                        confirmText: "Eliminar",
+                                        cancelText: "Cancelar",
+                                        variant: "destructive",
+                                      });
+                                      if (confirmed) {
+                                        onDeleteSprint?.(sprint.id);
+                                      }
+                                    }}
+                                    className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 rounded"
+                                    title="Eliminar"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+
+                      {/* Sprints completados */}
+                      {sprints.filter((s) => s.status === "completed")
+                        .length > 0 && (
+                        <div className="pt-1">
+                          <p className="text-[10px] text-muted-foreground uppercase px-3 mb-1">
+                            Completados
+                          </p>
+                          {sprints
+                            .filter((s) => s.status === "completed")
+                            .map((sprint) => (
+                              <div
+                                key={sprint.id}
+                                className="group relative"
+                              >
+                                <button
+                                  onClick={() =>
+                                    onSelectSprint?.(sprint.id)
+                                  }
+                                  className={cn(
+                                    "w-full flex items-center gap-2 px-3 py-1.5 pr-12 rounded-xl text-xs transition-colors",
+                                    selectedSprintId === sprint.id
+                                      ? "bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300 font-medium"
+                                      : "text-muted-foreground hover:bg-accent"
+                                  )}
+                                >
+                                  <CheckCircle2 className="h-3 w-3 text-green-500 flex-shrink-0" />
+                                  <span className="flex-1 text-left truncate">
+                                    {sprint.name}
+                                  </span>
+                                </button>
+                                {permissions.canCreateSprint && (
                                   <div className="absolute right-2 top-1.5 hidden group-hover:flex gap-1">
                                     <button
-                                      onClick={async () => {
+                                      onClick={async (e) => {
+                                        e.stopPropagation();
                                         const confirmed = await confirm({
                                           title: "Eliminar sprint",
                                           description: `¿Eliminar "${sprint.name}"?`,
@@ -477,15 +598,15 @@ export function Layout({
                                       <Trash2 className="h-3 w-3" />
                                     </button>
                                   </div>
-                                </div>
-                              ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </AccordionContent>
-                </AccordionItem>
-              )}
+                                )}
+                              </div>
+                            ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </AccordionContent>
+              </AccordionItem>
 
               {/* Vistas */}
               <AccordionItem value="vistas" className="border-none">
