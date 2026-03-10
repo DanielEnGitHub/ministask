@@ -4,14 +4,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-MiniTasks is a modern task management web application built with React 18, TypeScript, and TailwindCSS. The app is entirely client-side with local-first data persistence using IndexedDB via Dexie.js.
+MiniTasks is a modern task management web application built with React 19, TypeScript, and TailwindCSS. The app uses **Supabase** as backend (PostgreSQL database + Auth + Storage). It is a multi-user app with role-based access control.
 
 **Key Features**:
+
 - **Projects**: Organize tasks into projects (optional)
-- **Sprints**: Create time-boxed sprints within projects
-- **Recurring Tasks**: Tasks that repeat daily/weekly/monthly on specific days
+- **Sprints**: Global time-boxed sprints, auto-selects current sprint on load
+- **Sprint Filtering**: Sidebar sprint selector with toggle to include/exclude unsprinted tasks
 - **Multiple Views**: List, Kanban (drag & drop), and Calendar views
-- **Smart Filtering**: When a project is selected, all views automatically filter tasks
+- **Smart Filtering**: Views filter tasks by selected project and/or sprint
+- **Image Upload**: Tasks can have multiple images (stored in Supabase Storage)
+- **Subtasks**: Checkbox subtask lists with progress tracking
+- **Task Labels & Priority**: Labels (bug, implementacion, mejora, actualizacion, otro) + priority (alta, media, baja)
+- **Task View History**: Tracks which users viewed each task (admin-visible)
+- **Role-Based Access Control**: Admin and Client roles with distinct permissions
+- **PWA Support**: Installable with offline support via Service Workers
+- **Dark/Light Theme**: Persistent theme toggle
 
 **Language**: Spanish (UI text, comments, and user-facing content)
 
@@ -34,120 +42,214 @@ npm run preview
 npm run lint
 ```
 
+## Environment Variables
+
+Required in `.env.local`:
+
+```
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
+```
+
 ## Core Architecture
 
-### Data Layer (IndexedDB with Dexie.js)
+### Backend: Supabase
 
-The database is defined in `src/lib/db.ts` with **version 3** schema:
-- **tasks**: Main task entities with indexed fields (id, title, status, projectId, sprintId, createdAt, startDate, endDate, isRecurring)
-- **comments**: Comments associated with tasks (indexed by taskId) - schema exists but not used in UI
-- **projects**: Project entities (id, name, createdAt)
-- **sprints**: Sprint entities (id, name, startDate, endDate, createdAt) - **Global**, can have multiple projects
+The app uses Supabase for:
 
-**Schema Evolution**:
-- Version 1→2: Adds projects, sprints, and recurrence to tasks
-- Version 2→3: Converts sprints from project-specific to global (projectId → projectIds array)
+- **PostgreSQL Database**: All app data persisted in cloud
+- **Auth**: Email/password authentication with session management
+- **Storage**: Image uploads in `task-images` bucket
 
-All data operations use Dexie's API. Data is loaded reactively using `useLiveQuery()` from `dexie-react-hooks`.
+> Note: `src/lib/db.ts` still exists (old Dexie IndexedDB schema with 7 versions) but is **no longer used**. The app migrated fully to Supabase.
+
+### Database Tables (Supabase PostgreSQL)
+
+- **tasks**: id, title, description, status, label, priority, project_id, sprint_id, start_date, end_date, subtasks (jsonb), images (text[]), task_views (jsonb), created_by, created_at, updated_at
+- **projects**: id, name, description, color, created_by, created_at
+- **sprints**: id, name, goal, start_date, end_date, status (active|completed), created_by, created_at, updated_at
+- **profiles**: id, email, full_name, role (admin|client), created_at, updated_at
+- **project_assignments**: id, project_id, user_id, assigned_by
+- **comments**: id, task_id, text, user_id, user_name, parent_comment_id, created_at, updated_at
+
+### Service Layer (`src/services/`)
+
+All Supabase operations go through service files:
+
+- `tasks.service.ts` — CRUD, role-based filtering, status updates, task view tracking
+- `projects.service.ts` — CRUD, user assignment management
+- `sprints.service.ts` — CRUD, complete sprint (unassigns unfinished tasks), delete
+- `users.service.ts` — Profile management, project assignment sync
+- `storage.service.ts` — Image upload/delete to Supabase Storage
+- `comments.service.ts` — Comment operations (schema exists, not exposed in UI yet)
 
 ### State Management
 
-No external state management library. State is managed through:
-- **IndexedDB as source of truth**: All task/project/sprint data persists in IndexedDB
-- **React hooks**: Local component state with `useState`
-- **Dexie live queries**: Automatic re-renders when database changes via `useLiveQuery()`
+No external state management library. State managed through:
 
-Main state container is `App.tsx` which:
-- Loads tasks/projects/sprints from DB with live queries
-- Manages current view mode (list/kanban/calendar)
-- Manages selected project filter (`selectedProjectId`)
-- Handles modal visibility and editing state (tasks, projects, sprints)
+- **Supabase as source of truth**: All data persisted in PostgreSQL
+- **React hooks**: Local component state with `useState`
+- **Service layer**: All DB calls go through `/services/`
+
+Main state container is `src/pages/Dashboard.tsx` (not App.tsx):
+
+- Loads tasks/projects/sprints from Supabase
+- Manages view mode (list/kanban/calendar) — persisted in localStorage
+- Manages selected project filter (`selectedProjectId`) — persisted in localStorage
+- Manages selected sprint filter (`selectedSprintId`)
+- Toggle for unsprinted tasks (`showUnsprintedTasks`) — persisted in localStorage
+- Handles modal visibility and editing state
 - Provides CRUD operations for tasks, projects, and sprints
-- Filters tasks by selected project before passing to views
-- Automatically generates recurring task instances via `checkAndGenerateRecurringTasks()` on mount
+- Filters tasks by project AND sprint before passing to views
+
+### Auth & Routing (`src/App.tsx`)
+
+```
+App.tsx
+├── No user → Login page
+└── User exists → BrowserRouter
+    ├── "/" → Dashboard
+    ├── "/users" → Users (admin only)
+    └── "*" → redirect to "/"
+```
+
+`src/contexts/AuthContext.tsx` provides:
+
+- `user` — Supabase Auth User
+- `profile` — Profiles record (id, email, full_name, role)
+- `session` — Supabase Session
+- `loading` — Boolean during initialization
+- `signIn(email, password)` / `signOut()`
+- `isAdmin` — shorthand for `profile.role === 'admin'`
+- `isClient` — shorthand for `profile.role === 'client'`
+
+Profile loading strategy: immediately uses `user_metadata` from Auth session, then loads full profile from DB in background to prevent UI blocking.
 
 ### Component Structure
 
 ```
-App.tsx (root)
-├── Layout.tsx (sidebar with projects/sprints/views/stats)
-├── Views (rendered conditionally)
-│   ├── ListView.tsx (search/filter interface)
-│   ├── KanbanView.tsx (drag & drop columns by status)
-│   └── CalendarView.tsx (monthly calendar grid)
-└── Modals
-    ├── TaskModal.tsx (create/edit tasks)
-    ├── ProjectModal.tsx (create/edit projects)
-    └── SprintModal.tsx (create/edit sprints)
+App.tsx (router + auth check)
+├── Login.tsx
+└── Dashboard.tsx (main state container)
+    ├── Layout.tsx (sidebar: projects, sprints, views, theme)
+    ├── Views (conditionally rendered)
+    │   ├── ListView.tsx (search + list)
+    │   ├── KanbanView.tsx (drag & drop columns)
+    │   └── CalendarView.tsx (monthly grid)
+    └── Modals
+        ├── TaskModal.tsx (create/edit tasks + image upload)
+        ├── TaskDetailModal.tsx (task detail + history)
+        ├── ProjectModal.tsx (create/edit projects)
+        ├── SprintModal.tsx (create/edit sprints)
+        ├── UserModal.tsx (edit user role)
+        ├── AssignProjectsModal.tsx (assign projects to user)
+        └── HistoryModal.tsx (task view history)
 ```
 
-**View Pattern**: Each view receives **filtered tasks** (already filtered by project in App.tsx):
-- `tasks`: Array of filtered tasks (all tasks if no project selected, or tasks for selected project)
-- `onEditTask`: Callback to open edit modal
-- `onDeleteTask`: Callback to delete task
-- Additional callbacks specific to view (e.g., `onUpdateTaskStatus` for Kanban)
+**View Pattern**: All views receive already-filtered tasks from Dashboard:
 
-**Layout Pattern**: Receives projects/sprints and manages:
-- Project selection (triggers filtering in App.tsx)
-- Sprint display (only shows sprints for selected project)
-- Quick access buttons to create projects/sprints/tasks
-- Edit/delete actions for projects and sprints
+- `tasks` — Filtered by selected project + sprint
+- `onEditTask(task)` — Opens TaskModal
+- `onDeleteTask(taskId)` — Confirmation + delete
+- `onUpdateTaskStatus(taskId, status)` — For Kanban drag & drop
+
+**Layout Pattern**: Sidebar receives projects/sprints, manages:
+
+- Project selection → triggers Dashboard filtering
+- Sprint selection → triggers Dashboard sprint filtering
+- Toggle to show/hide unsprinted tasks
+- Overdue sprint warning (red badge if active sprint past end_date)
+- Quick action buttons (+ task/project/sprint)
+- Edit/delete for projects and sprints
+- Theme toggle, logout, user display
+
+### Role-Based Permissions (`src/hooks/usePermissions.ts`)
+
+**Admin**:
+
+- Full CRUD on all tasks, projects, sprints
+- Can see all projects (not filtered by assignments)
+- Can manage users (`/users` page)
+- Can assign users to projects
+- Can change any task to any status
+- Can view task view history
+
+**Client**:
+
+- Only sees projects assigned to them (via `project_assignments`)
+- Only sees tasks from their assigned projects
+- Can create tasks in assigned projects
+- Can only change task status from `paused` → `completed` or `cancelled`
+- Cannot edit or delete tasks
+- Cannot manage projects, sprints, or users
+
+Permission hooks:
+
+- `canCreateProject` / `canEditProject` / `canDeleteProject` — Admin only
+- `canCreateSprint` / `canEditSprint` / `canDeleteSprint` — Admin only
+- `canEditTask` / `canDeleteTask` — Admin only
+- `canChangeTaskStatus` — Admin: always; Client: restricted transitions only
+- `canChangeTaskStatusTo(currentStatus, newStatus)` — Validates transition
+- `canCreateComment` / `canDeleteComment(userId)` — Both roles; own comments only for delete
+- `canViewAllProjects` / `canViewAllUsers` / `canAssignUsersToProjects` — Admin only
 
 ### Key Technical Details
 
-**Project/Sprint Hierarchy**:
-- Projects are top-level organizational units (optional)
-- **Sprints are GLOBAL** and can be associated with multiple projects (projectIds array)
-- Tasks can belong to a project and optionally a sprint
-- When selecting a project in sidebar, App.tsx filters tasks by `projectId`
-- Layout shows sprints filtered by selected project (shows sprints that include the selected project)
-- Sprint selector in TaskModal only shows sprints that include the selected project
-- Deleting a project removes it from sprint's projectIds array (doesn't delete sprints)
+**Field Name Compatibility (`src/lib/taskUtils.ts`)**:
+Utilities handle both `snake_case` (Supabase responses) and `camelCase` (legacy Dexie format):
 
-**Recurring Tasks**:
-- Parent recurring task has `isRecurring: true` and a `RecurrenceConfig` object
-- `RecurrenceConfig` defines:
-  - `frequency`: 'daily' | 'weekly' | 'monthly'
-  - `interval`: Repeat every X days/weeks/months
-  - `daysOfWeek`: For weekly recurrence (0=Sunday, 6=Saturday)
-  - End condition: either `endDate` or `endAfterOccurrences`
-- `src/lib/recurrence.ts` contains logic to generate task instances
-- `checkAndGenerateRecurringTasks()` automatically creates instances for next 90 days
-- Generated instances have `parentTaskId` set to the parent task's ID
-- Generated instances are NOT recurring themselves (`isRecurring: false`)
+- `getTaskProjectId(task)` — returns `project_id` or `projectId`
+- `getTaskSprintId(task)` — returns `sprint_id` or `sprintId`
+- `getTaskStartDate(task)` / `getTaskEndDate(task)`
+- `normalizeTask(task)` — converts full object
+
+**Sprint Logic (`src/lib/sprintUtils.ts`)**:
+
+- `getCurrentSprint(sprints)` — Auto-selects by priority: in-progress → overdue (latest) → future (earliest) → none
+- `isSprintOverdue(sprint)` — active sprint with end_date < today
+
+**Date Handling (`src/lib/dateUtils.ts`)**:
+
+- UTC-safe operations to prevent timezone drift
+- `toDateInputValue(date)` — Date → "YYYY-MM-DD" for `<input type="date">`
+- `formatDateForDisplay(date)` — Date → "DD/MM/YYYY" for UI
+- `normalizeDate(date)` — removes time component, uses UTC
 
 **Task Status Flow**:
-Tasks follow this status enum: `created` → `in_progress` → `paused` | `cancelled` | `completed`
-- Status configuration with labels/colors defined in `src/lib/types.ts` as `STATUS_CONFIG`
-- KanbanView uses drag & drop via `@hello-pangea/dnd` to change status between columns
+`created` → `in_progress` → `paused` | `cancelled` | `completed`
+
+Status config with labels/colors: `STATUS_CONFIG` in `src/lib/types.ts`
 
 **Drag & Drop (Kanban)**:
-- Uses `@hello-pangea/dnd` (maintained fork of react-beautiful-dnd)
-- Each status column is a `Droppable` with `droppableId` = status value
-- Task cards are `Draggable` with `draggableId` = task.id
-- `onDragEnd` handler in `KanbanView.tsx` calls `onUpdateTaskStatus` with new status
+Uses `@hello-pangea/dnd` (maintained fork of react-beautiful-dnd). Each status column is a `Droppable`, task cards are `Draggable`. Drag end triggers `onUpdateTaskStatus` service call.
 
-**Date Handling**:
-- Uses `date-fns` for formatting dates and recurrence calculations
-- Task dates stored as Date objects in IndexedDB
-- CalendarView groups tasks by date using date-fns utilities
+**Image Upload**:
 
-**UI Components**:
-- Uses shadcn/ui components (button, card, dialog, input, select, textarea, badge)
-- Components located in `src/components/ui/`
-- Styling with TailwindCSS utility classes
-- Custom theme configuration in `tailwind.config.js`
+- Stored in Supabase Storage bucket `task-images`
+- Path format: `{taskId}/{uuid}.{ext}`
+- Public URLs stored in `tasks.images[]`
+- Upload via `storage.service.ts`
 
-**Path Aliases**:
-- `@/` maps to `src/` (configured in tsconfig and vite.config.ts)
+**Task View History**:
+
+- `task_views` jsonb field on tasks: `[{user_id, user_name, viewed_at}]`
+- Tracked via Supabase RPC `record_task_view` (only called for non-admin viewers)
+- Visible to admins in `HistoryModal.tsx`
+
+**PWA**:
+
+- `vite-plugin-pwa` with auto-update strategy
+- Service worker via Workbox for asset precaching
+- Google Fonts cache (1-year)
+- App manifest: name "MiniTasks - Gestión de Tareas"
 
 ## Important Notes
-
-- This is a **local-only** application - no backend, API, or authentication
-- All user data stays in the browser's IndexedDB (not synced across devices)
-- Spanish is the UI language - maintain Spanish for all user-facing text
-- IDs use `Date.now().toString()` for generation (simple client-side approach for tasks, projects, sprints)
-- Comments table exists in schema but comment functionality is not implemented in current UI
-- Projects are optional - tasks can exist without a project
-- Recurring tasks work independently of projects/sprints
-- When editing a recurring parent task, existing generated instances are NOT updated automatically
+s
+- **Supabase backend**: Not local-only anymore. Multi-user, cloud-persisted.
+- **Spanish UI**: Maintain Spanish for all user-facing text (no i18n library, hardcoded Spanish)
+- **IDs**: Generated by Supabase (UUID), not `Date.now().toString()` anymore
+- **Comments**: Schema exists, service implemented, but not exposed in UI
+- **Old Dexie code**: `src/lib/db.ts` still in codebase but unused — do not use it for new features
+- **Recurring tasks**: Logic exists in old Dexie (`src/lib/recurrence.ts`) but not implemented in current Supabase version
+- **Projects are optional**: Tasks can exist without a project
+- **Sprints are global**: Not project-specific, all users see sprints (filtered in UI by selected project context)
