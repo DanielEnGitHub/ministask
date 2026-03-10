@@ -609,8 +609,8 @@ export function TaskModal({
               )}
             </div>
 
-            {/* Sprint (solo admin, solo sprints activos) */}
-            {permissions.isAdmin ? (
+            {/* Sprint (admin y subadmin, solo sprints activos) */}
+            {(permissions.isAdmin || permissions.isSubAdmin) ? (
               <div>
                 <label className="block text-sm font-medium mb-1.5">
                   Sprint

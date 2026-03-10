@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Label } from './ui/label'
@@ -10,7 +10,7 @@ import type { UserWithAssignments } from '@/services/users.service'
 interface UserModalProps {
   open: boolean
   onClose: () => void
-  onSave: (userData: { role: 'admin' | 'client' }) => void
+  onSave: (userData: { role: 'admin' | 'client' | 'subadmin' }) => void
   user: UserWithAssignments | null
   onUserCreated?: () => void
 }
@@ -18,28 +18,32 @@ interface UserModalProps {
 export function UserModal({ open, onClose, onSave, user, onUserCreated }: UserModalProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [role, setRole] = useState<'admin' | 'client'>('client')
+  // pendingRole almacena el rol solo cuando el usuario lo cambia manualmente en el select.
+  // Mientras sea null, se usa user?.role directamente (sin depender de efectos ni timing).
+  const [pendingRole, setPendingRole] = useState<'admin' | 'client' | 'subadmin' | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const prevOpenRef = useRef(false)
 
   const isEditing = !!user
 
+  // Rol efectivo: si el usuario cambió el select (pendingRole), usar ese; si no, usar user.role
+  const role: 'admin' | 'client' | 'subadmin' =
+    pendingRole ?? (user?.role as 'admin' | 'client' | 'subadmin') ?? 'client'
+
+  // Resetear pendingRole y email cuando el modal abre con un nuevo usuario
   useEffect(() => {
-    if (open) {
-      if (user) {
-        // Modo edición
-        setEmail(user.email)
-        setRole(user.role)
-        setPassword('')
-      } else {
-        // Modo creación
-        setEmail('')
-        setPassword('')
-        setRole('client')
-      }
+    const wasOpen = prevOpenRef.current
+    prevOpenRef.current = open
+
+    if (open && !wasOpen) {
+      // Modal acaba de abrirse
+      setPendingRole(null)
+      setEmail(user?.email ?? '')
+      setPassword('')
       setError(null)
     }
-  }, [open, user])
+  }, [open, user?.id])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -158,18 +162,23 @@ export function UserModal({ open, onClose, onSave, user, onUserCreated }: UserMo
           {/* Rol */}
           <div className="space-y-2">
             <Label htmlFor="role">Rol</Label>
-            <Select value={role} onValueChange={(value: 'admin' | 'client') => setRole(value)}>
+            <Select value={role} onValueChange={(value: 'admin' | 'client' | 'subadmin') => setPendingRole(value)}>
               <SelectTrigger id="role">
-                <SelectValue />
+                <span>
+                  {role === 'admin' ? 'Administrador' : role === 'subadmin' ? 'Subadministrador' : 'Cliente'}
+                </span>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="client">Cliente</SelectItem>
+                <SelectItem value="subadmin">Subadministrador</SelectItem>
                 <SelectItem value="admin">Administrador</SelectItem>
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">
               {role === 'admin'
                 ? 'Acceso completo a todos los proyectos y tareas'
+                : role === 'subadmin'
+                ? 'Permisos de admin en sus proyectos asignados, sin gestión de usuarios'
                 : 'Solo puede ver proyectos asignados'}
             </p>
           </div>

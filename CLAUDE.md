@@ -68,7 +68,7 @@ The app uses Supabase for:
 - **tasks**: id, title, description, status, label, priority, project_id, sprint_id, start_date, end_date, subtasks (jsonb), images (text[]), task_views (jsonb), created_by, created_at, updated_at
 - **projects**: id, name, description, color, created_by, created_at
 - **sprints**: id, name, goal, start_date, end_date, status (active|completed), created_by, created_at, updated_at
-- **profiles**: id, email, full_name, role (admin|client), created_at, updated_at
+- **profiles**: id, email, full_name, role (admin|subadmin|client), created_at, updated_at
 - **project_assignments**: id, project_id, user_id, assigned_by
 - **comments**: id, task_id, text, user_id, user_name, parent_comment_id, created_at, updated_at
 
@@ -121,6 +121,7 @@ App.tsx
 - `loading` — Boolean during initialization
 - `signIn(email, password)` / `signOut()`
 - `isAdmin` — shorthand for `profile.role === 'admin'`
+- `isSubAdmin` — shorthand for `profile.role === 'subadmin'`
 - `isClient` — shorthand for `profile.role === 'client'`
 
 Profile loading strategy: immediately uses `user_metadata` from Auth session, then loads full profile from DB in background to prevent UI blocking.
@@ -173,6 +174,17 @@ App.tsx (router + auth check)
 - Can assign users to projects
 - Can change any task to any status
 - Can view task view history
+
+**Subadmin**:
+
+- Only sees projects assigned to them (via `project_assignments`)
+- Only sees tasks from their assigned projects
+- Full CRUD on tasks in their assigned projects (edit, delete, any status change)
+- Can create/edit/delete sprints (scoped to visible projects)
+- Can edit/delete projects they are assigned to (cannot create new projects)
+- Cannot manage users (`/users` page is admin-only)
+- Can view task view history (same as admin)
+- Does NOT get recorded as a task viewer
 
 **Client**:
 

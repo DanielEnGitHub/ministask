@@ -95,7 +95,7 @@ export function Users() {
   }
 
   const handleSaveUser = async (userData: {
-    role: 'admin' | 'client'
+    role: 'admin' | 'client' | 'subadmin'
   }) => {
     try {
       if (editingUser) {
@@ -206,10 +206,12 @@ export function Users() {
                             className={cn(
                               userItem.role === 'admin'
                                 ? 'bg-purple-100 text-purple-800 border-purple-200'
+                                : userItem.role === 'subadmin'
+                                ? 'bg-blue-100 text-blue-800 border-blue-200'
                                 : 'bg-green-100 text-green-800 border-green-200'
                             )}
                           >
-                            {userItem.role === 'admin' ? 'Admin' : 'Cliente'}
+                            {userItem.role === 'admin' ? 'Admin' : userItem.role === 'subadmin' ? 'Subadmin' : 'Cliente'}
                           </Badge>
                         </div>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">

@@ -49,7 +49,7 @@ export function TaskDetailModal({
   sprints = [],
   onEdit,
 }: TaskDetailModalProps) {
-  const { user, profile, isAdmin } = useAuth();
+  const { user, profile, isAdmin, isSubAdmin } = useAuth();
   const [showViews, setShowViews] = useState(false);
 
   // Estado para comentarios
@@ -59,13 +59,13 @@ export function TaskDetailModal({
   const [replyText, setReplyText] = useState("");
   const [loadingComments, setLoadingComments] = useState(false);
 
-  // Registrar vista cuando un NO admin abre el modal
+  // Registrar vista cuando un cliente abre el modal (no admin ni subadmin)
   useEffect(() => {
-    if (open && task && user && profile && !isAdmin) {
+    if (open && task && user && profile && !isAdmin && !isSubAdmin) {
       const userName = profile.name || user.email || "Usuario";
       TasksService.recordTaskView(task.id, user.id, userName);
     }
-  }, [open, task, user, profile, isAdmin]);
+  }, [open, task, user, profile, isAdmin, isSubAdmin]);
 
   // Resetear estado cuando se cierra el modal
   useEffect(() => {
@@ -498,8 +498,8 @@ export function TaskDetailModal({
               )}
             </div>
 
-            {/* Historial de vistas - Solo para administradores */}
-            {isAdmin && (
+            {/* Historial de vistas - Para admin y subadmin */}
+            {(isAdmin || isSubAdmin) && (
               <div className="border-t pt-6">
                 <Button
                   type="button"

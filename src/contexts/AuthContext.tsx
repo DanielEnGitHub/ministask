@@ -28,6 +28,7 @@ interface AuthContextType {
   // Helpers
   isAdmin: boolean
   isClient: boolean
+  isSubAdmin: boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -162,6 +163,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signOut,
     isAdmin: profile?.role === 'admin',
     isClient: profile?.role === 'client',
+    isSubAdmin: profile?.role === 'subadmin',
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

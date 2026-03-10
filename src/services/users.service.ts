@@ -41,7 +41,7 @@ export async function getAllUsers() {
 
     // @ts-ignore - Supabase generated types issue
     // Transformar datos para incluir conteo de proyectos
-    const usersWithData = data?.map(user => ({
+    const usersWithData = data?.map((user: any) => ({
       ...user,
       project_count: user.project_assignments?.length || 0,
       assigned_projects: user.project_assignments?.map((assignment: any) => ({
@@ -89,7 +89,7 @@ export async function getUserById(userId: string) {
  * Solo admin puede actualizar perfiles de otros usuarios
  */
 export async function updateUserProfile(userId: string, updates: {
-  role?: 'admin' | 'client'
+  role?: 'admin' | 'client' | 'subadmin'
 }) {
   try {
     // Actualizar en la tabla profiles
@@ -99,9 +99,10 @@ export async function updateUserProfile(userId: string, updates: {
       .update(updates)
       .eq('id', userId)
       .select()
-      .single()
+      .maybeSingle()
 
     if (profileError) throw profileError
+    if (!profileData) throw new Error('No se pudo actualizar el perfil. Verifica los permisos RLS en Supabase.')
 
     // Si se actualiza el rol, también actualizar en user_metadata
     if (updates.role) {

@@ -7,6 +7,9 @@
  *
  * Roles:
  * - admin: Acceso completo a todo
+ * - subadmin: Mismos permisos que admin en su proyecto asignado,
+ *             NO puede gestionar usuarios ni ver proyectos/sprints
+ *             fuera de sus asignaciones
  * - client: Solo ve proyectos asignados, puede crear tareas
  *           pero NO puede editar estados ni proyectos
  * =====================================================
@@ -15,7 +18,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 
 export function usePermissions() {
-  const { profile, isAdmin, isClient } = useAuth();
+  const { profile, isAdmin, isClient, isSubAdmin } = useAuth();
 
   return {
     // ============================================
@@ -30,20 +33,22 @@ export function usePermissions() {
 
     /**
      * Puede editar proyectos
-     * Solo admin
+     * Admin: cualquier proyecto
+     * Subadmin: solo sus proyectos asignados
      */
-    canEditProject: isAdmin,
+    canEditProject: isAdmin || isSubAdmin,
 
     /**
      * Puede eliminar proyectos
-     * Solo admin
+     * Admin: cualquier proyecto
+     * Subadmin: solo sus proyectos asignados
      */
-    canDeleteProject: isAdmin,
+    canDeleteProject: isAdmin || isSubAdmin,
 
     /**
      * Puede ver todos los proyectos
      * Admin: Sí
-     * Client: Solo proyectos asignados
+     * Subadmin/Client: Solo proyectos asignados
      */
     canViewAllProjects: isAdmin,
 
@@ -53,21 +58,21 @@ export function usePermissions() {
 
     /**
      * Puede crear sprints
-     * Solo admin
+     * Admin y Subadmin
      */
-    canCreateSprint: isAdmin,
+    canCreateSprint: isAdmin || isSubAdmin,
 
     /**
      * Puede editar sprints
-     * Solo admin
+     * Admin y Subadmin
      */
-    canEditSprint: isAdmin,
+    canEditSprint: isAdmin || isSubAdmin,
 
     /**
      * Puede eliminar sprints
-     * Solo admin
+     * Admin y Subadmin
      */
-    canDeleteSprint: isAdmin,
+    canDeleteSprint: isAdmin || isSubAdmin,
 
     // ============================================
     // TAREAS
@@ -75,29 +80,30 @@ export function usePermissions() {
 
     /**
      * Puede crear tareas
-     * Admin: En cualquier proyecto
-     * Client: Solo en proyectos asignados
+     * Todos los roles (validación de proyecto asignado se hace en otro lado)
      */
-    canCreateTask: true, // Ambos pueden crear tareas (validación de proyecto asignado se hace en otro lado)
+    canCreateTask: true,
 
     /**
      * Puede editar tareas
-     * Solo admin puede editar cualquier tarea
+     * Admin: cualquier tarea
+     * Subadmin: tareas de sus proyectos asignados
      */
-    canEditTask: isAdmin,
+    canEditTask: isAdmin || isSubAdmin,
 
     /**
      * Puede eliminar tareas
-     * Solo admin
+     * Admin: cualquier tarea
+     * Subadmin: tareas de sus proyectos asignados
      */
-    canDeleteTask: isAdmin,
+    canDeleteTask: isAdmin || isSubAdmin,
 
     /**
      * Puede cambiar estado de tareas
-     * Admin: Puede cambiar cualquier estado
+     * Admin y Subadmin: Pueden cambiar cualquier estado
      * Client: Solo puede cambiar de "En Revisión" (paused) a "Finalizado" (completed) o "Cancelado" (cancelled)
      */
-    canChangeTaskStatus: isAdmin,
+    canChangeTaskStatus: isAdmin || isSubAdmin,
 
     /**
      * Verifica si puede cambiar de un estado a otro
@@ -105,8 +111,8 @@ export function usePermissions() {
      * @param newStatus - Nuevo estado deseado
      */
     canChangeTaskStatusTo: (currentStatus: string, newStatus: string) => {
-      // Admin puede cambiar cualquier estado
-      if (isAdmin) return true;
+      // Admin y Subadmin pueden cambiar cualquier estado
+      if (isAdmin || isSubAdmin) return true;
 
       // Cliente solo puede cambiar de "paused" (En Revisión) a "completed" (Finalizado) o "cancelled" (Cancelado)
       if (isClient) {
@@ -122,7 +128,7 @@ export function usePermissions() {
     /**
      * Puede ver todas las tareas
      * Admin: Sí
-     * Client: Solo tareas de proyectos asignados
+     * Subadmin/Client: Solo tareas de proyectos asignados
      */
     canViewAllTasks: isAdmin,
 
@@ -154,7 +160,7 @@ export function usePermissions() {
 
     /**
      * Puede crear comentarios
-     * Ambos roles
+     * Todos los roles
      */
     canCreateComment: true,
 
@@ -179,6 +185,11 @@ export function usePermissions() {
      * Es admin
      */
     isAdmin,
+
+    /**
+     * Es subadmin
+     */
+    isSubAdmin,
 
     /**
      * Es cliente

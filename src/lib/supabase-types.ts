@@ -22,7 +22,7 @@ export interface Database {
           id: string
           email: string
           full_name: string | null
-          role: 'admin' | 'client'
+          role: 'admin' | 'client' | 'subadmin'
           created_at: string
           updated_at: string
         }
@@ -30,7 +30,7 @@ export interface Database {
           id: string
           email: string
           full_name?: string | null
-          role?: 'admin' | 'client'
+          role?: 'admin' | 'client' | 'subadmin'
           created_at?: string
           updated_at?: string
         }
@@ -38,7 +38,7 @@ export interface Database {
           id?: string
           email?: string
           full_name?: string | null
-          role?: 'admin' | 'client'
+          role?: 'admin' | 'client' | 'subadmin'
           created_at?: string
           updated_at?: string
         }
@@ -211,7 +211,7 @@ export interface Database {
       [_ in never]: never
     }
     Enums: {
-      user_role: 'admin' | 'client'
+      user_role: 'admin' | 'client' | 'subadmin'
       task_status: 'created' | 'in_progress' | 'paused' | 'cancelled' | 'completed'
       task_label: 'bug' | 'implementacion' | 'mejora' | 'actualizacion' | 'otro'
       sprint_status: 'active' | 'completed'
